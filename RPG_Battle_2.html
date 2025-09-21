@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RPG Battle Mockup</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1e222b;
+      --text: #e7ebf3;
+      --muted: #a7b0c0;
+      --accent: #5aa2ff;
+      --hp: #ff5a5a;
+      --mp: #5abaff;
+      --bar-bg: #2a2f3a;
+      --good: #46d369;
+      --warn: #f2c94c;
+      --bad: #ff6b6b;
+      --radius: 14px;
+      --max-width: 520px; /* column width on desktop */
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 50% -10%, #1a1f2b 0%, var(--bg) 40%);
+    }
+
+    .page {
+      min-height: 100dvh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .column {
+      width: 100%;
+      max-width: var(--max-width);
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid #2a2f3a;
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    }
+
+    .monster {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+    }
+
+    .monster-img {
+      width: 100%;
+      display: block;
+      aspect-ratio: 16 / 10;
+      object-fit: contain;
+      background: #111;
+    }
+
+    .monster-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 12px;
+      background: linear-gradient( to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 40%, rgba(0,0,0,0) 70% );
+      pointer-events: none;
+    }
+
+    .monster-meta {
+      display: grid;
+      gap: 6px;
+    }
+
+    .monster-name {
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: 0.4px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    }
+
+    .monster-stats {
+      display: grid;
+      gap: 6px;
+      min-width: 48%;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.875rem;
+      width: fit-content;
+      pointer-events: auto; /* allow selection */
+    }
+
+    .row { display: flex; align-items: center; gap: 8px; width: 100%; }
+
+    /* Bars */
+    .bar {
+      position: relative;
+      width: 100%;
+      height: 16px;
+      background: var(--bar-bg);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #3a4152;
+    }
+    .bar-fill { position: absolute; inset: 0 0 0 0; width: 50%; height: 100%; background: var(--hp); }
+    .bar-text {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+      mix-blend-mode: normal;
+    }
+
+    .story { padding: 12px 14px; line-height: 1.45; color: var(--muted); }
+
+    .actions { padding: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .action-btn {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 1px solid #2b3241;
+      background: #202532;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.04s ease, background 0.2s ease, border-color 0.2s ease;
+      touch-action: manipulation;
+    }
+    .action-btn:hover { background: #263043; }
+    .action-btn:active { transform: translateY(1px) scale(0.995); }
+
+    .party {
+      padding: 10px;
+      display: flex;            /* horizontal layout */
+      gap: 10px;
+      flex-wrap: wrap;          /* wrap on small screens */
+      justify-content: center;  /* center the row */
+    }
+
+    .member {
+      display: grid;
+      grid-template-columns: 1fr; /* vertical tile */
+      gap: 8px;
+      align-items: start;
+      justify-items: center;
+      text-align: center;
+      padding: 10px;
+      border-radius: 12px;
+      background: #202534;
+      border: 1px solid #2a3142;
+      /* make each card size nicely in the row */
+      flex: 1 1 clamp(160px, 45%, 220px);
+      max-width: 240px;
+    }
+
+    .avatar {
+      width: 72px; height: 72px; border-radius: 10px; overflow: hidden; border: 1px solid #3a4152; background: #0b0e13;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .member-main { display: grid; gap: 6px; }
+    .member-top { display: flex; align-items: baseline; gap: 8px; }
+    .member-name { font-weight: 700; }
+    .member-meta { color: var(--muted); font-size: 0.9rem; }
+
+    .label { font-size: 0.78rem; color: var(--muted); min-width: 34px; }
+
+    .controls-placeholder { padding: 16px; color: var(--muted); text-align: center; border: 1px dashed #3a4152; border-radius: var(--radius); background: #1a1f2b; }
+
+    /* Party row tile refinements */
+    .member-main { width: 100%; }
+    .member-top { justify-content: center; }
+    .member .row { display: grid; grid-template-columns: 1fr; gap: 6px; }
+    .member .label { justify-self: center; font-size: 0.75rem; }
+
+    @media (min-width: 900px) {
+      .party .member { flex: 1 1 calc(25% - 10px); } /* 4 per row on wider screens */
+    }
+
+    /* Desktop spacing */
+    @media (min-width: 768px) {
+      .actions { grid-template-columns: repeat(6, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <main class="column">
+
+      <!-- Monster Panel -->
+      <section class="card monster" id="monster-panel">
+        <img id="monster-img" class="monster-img" alt="Monster" />
+        <div class="monster-overlay">
+          <div class="monster-meta">
+            <div class="monster-name" id="monster-name">??</div>
+          </div>
+          <div class="monster-stats" id="monster-stats">
+			<div class="badge" id="monster-power">Power: 0</div>
+            <div class="row">
+              <span class="label">HP</span>
+              <div class="bar" aria-label="Monster HP">
+                <div class="bar-fill" id="monster-hp-fill" style="background: var(--hp); width: 50%"></div>
+                <div class="bar-text" id="monster-hp-text">0 / 0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Story / Situation Text -->
+      <section class="card story" id="story">
+        You stand before the old haunted school house. The air hums with dread...and learning potential!
+      </section>
+
+      <!-- Primary Actions -->
+      <section class="card actions" id="actions">
+        <!-- Buttons injected by JS for easy reconfiguration -->
+      </section>
+
+      <!-- Party Panel -->
+      <section class="card party" id="party">
+        <!-- Party members injected by JS -->
+      </section>
+
+      <!-- Combat Controls Placeholder -->
+      <section class="card controls-placeholder" id="combat-controls">
+        Combat controls will appear here.
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+// ===== Utility: Inline placeholder image (SVG data URL) =====
+function placeholderSVG(label = "Image", w = 800, h = 500) {
+  const svg = encodeURIComponent(`<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>\n<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#263248'/><stop offset='100%' stop-color='#151a24'/></linearGradient></defs>\n<rect width='100%' height='100%' fill='url(#g)'/>\n<text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='system-ui,Segoe UI' font-size='32' fill='white' opacity='0.7'>${label}</text></svg>`);
+  return `data:image/svg+xml;charset=utf-8,${svg}`;
+}
+
+// ===== DOM helpers =====
+function el(tag, attrs = {}, children = []) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+	if (k === 'class') e.className = v;
+	else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
+	else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
+	else if (k === 'dataset') Object.assign(e.dataset, v);
+	else e.setAttribute(k, v);
+  }
+  for (const c of (Array.isArray(children) ? children : [children])) {
+	if (c == null) continue;
+	if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+	else e.appendChild(c);
+  }
+  return e;
+}
+
+// Hide/show Monster Info
+function hideMonsterStats() {
+  const el1 = document.getElementById('monster-stats');
+  if (el1) {el1.style.display = 'none';} else {console.log("el1 is NULL");}
+}
+function showMonsterStats() {
+  const el = document.getElementById('monster-stats');
+  if (el) { el.style.display = 'grid';} else {console.log("el is NULL");}
+}
+
+// ===== Bars =====
+function makeBar(id, colorCSSVar, current, max, aria) {
+  const wrap = el('div', { class: 'bar', role: 'progressbar', 'aria-label': aria, 'aria-valuemin': 0, 'aria-valuemax': max, 'aria-valuenow': current });
+  const fill = el('div', { class: 'bar-fill', id, style: { background: `var(${colorCSSVar})`, width: `${percent(current, max)}%` } });
+  const text = el('div', { class: 'bar-text', id: id + '-text' }, `${current} / ${max}`);
+  wrap.append(fill, text);
+  return wrap;
+}
+
+function percent(cur, max) { return Math.max(0, Math.min(100, max > 0 ? (cur / max) * 100 : 0)); }
+
+function setBar(idBase, cur, max) {
+  const fill = document.getElementById(idBase);
+  const text = document.getElementById(idBase + '-text');
+  if (fill) fill.style.width = `${percent(cur, max)}%`;
+  if (text) text.textContent = `${cur} / ${max}`;
+}
+
+/* =========================
+   Game UI Conrols
+   ========================= */
+
+// ===== Monster UI =====
+function renderMonster(mon) {
+  document.getElementById('monster-img').src = mon.image || placeholderSVG('Monster');
+  document.getElementById('monster-name').textContent = mon.name;
+  if (mon.power > 0)
+  {
+	document.getElementById('monster-power').textContent = `Power: ${mon.power}`;
+	setBar('monster-hp-fill', mon.hp, mon.hpMax);
+	showMonsterStats();
+  }
+  else
+  {
+	hideMonsterStats();
+  }
+  console.log('monster-name: ' + mon.name);
+  console.log('monster-power: ' + mon.power);
+}
+
+function setMonster(next) { state.monster = { ...state.monster, ...next }; renderMonster(state.monster); }
+function setMonsterHP(hp, hpMax = state.monster.hpMax) { state.monster.hp = hp; state.monster.hpMax = hpMax; setBar('monster-hp-fill', hp, hpMax); }
+
+// ===== Actions UI =====
+function renderActions(list) {
+  const root = document.getElementById('actions');
+  root.innerHTML = '';
+  for (const a of list) {
+	const btn = el('button', { class: 'action-btn', id: `action-${a.id}`, onclick: (e) => a.handler?.(e) }, a.label);
+	root.appendChild(btn);
+  }
+}
+function setActions(list) { state.actions = list; renderActions(list); }
+
+// ===== Party UI =====
+function renderParty(members) {
+  const root = document.getElementById('party');
+  root.innerHTML = '';
+  for (const m of members) root.appendChild(renderMember(m));
+}
+
+function renderMember(m) {
+  const hpBar = makeBar(`hp-${m.id}`, '--hp', m.hp, m.hpMax, `${m.name} HP`);
+  const mpBar = makeBar(`mp-${m.id}`, '--mp', m.mp, m.mpMax, `${m.name} MP`);
+  return el('div', { class: 'member', id: `member-${m.id}`, dataset: { id: m.id } }, [
+	el('div', { class: 'avatar' }, el('img', { alt: `${m.name} portrait`, src: m.image || placeholderSVG(m.name, 200, 200) })),
+	el('div', { class: 'member-main' }, [
+	  el('div', { class: 'member-top' }, [
+		el('div', { class: 'member-name' }, m.name),
+		el('div', { class: 'member-meta' }, m.role || '')
+	  ]),
+	  el('div', { class: 'row' }, [ el('span', { class: 'label' }, 'HP'), hpBar ]),
+	  el('div', { class: 'row' }, [ el('span', { class: 'label' }, 'MP'), mpBar ]),
+	])
+  ]);
+}
+
+function setParty(nextMembers) { state.party = nextMembers.map(m => ({ ...m })); renderParty(state.party); }
+function setHP(id, hp, hpMax) {
+  const m = state.party.find(p => p.id === id);
+  if (!m) return;
+  if (typeof hp === 'number') m.hp = hp;
+  if (typeof hpMax === 'number') m.hpMax = hpMax;
+  setBar(`hp-${id}`, m.hp, m.hpMax);
+}
+function setMP(id, mp, mpMax) {
+  const m = state.party.find(p => p.id === id);
+  if (!m) return;
+  if (typeof mp === 'number') m.mp = mp;
+  if (typeof mpMax === 'number') m.mpMax = mpMax;
+  setBar(`mp-${id}`, m.mp, m.mpMax);
+}
+
+// ===== Story Text =====
+function setStory(text) { document.getElementById('story').innerHTML += text +"<br>"; }
+
+// ===== Init =====
+function init() {
+  // Example: update bars over time to demonstrate dynamic UI
+  // setTimeout(() => setHP('p2', 180), 1200);
+  Game.room_index = 0;
+  Game.clue_count = 0;
+  renderParty(state.party); // TODO
+  startGameFlow();
+}
+
+// Expose minimal API for rapid tinkering in console
+window.GameUI = {
+  setMonster, setMonsterHP, setActions, setParty, setHP, setMP, setStory
+};
+	
+
+/* =========================
+   Game Data
+   ========================= */
+const state = {
+  monster: {}, // Hooked up, don't set here 
+  party: [ // Not hooked up yet
+	{ id: "p1", name: "Aeris", role: "Wizard", hp: 4, hpMax: 3, mp: 10, mpMax: 10, image: placeholderSVG("Wizard", 200, 200) },
+	{ id: "p2", name: "Brann", role: "Warrior", hp: 10, hpMax: 7, mp: 0, mpMax: 1, image: placeholderSVG("Brann", 200, 200) },
+	{ id: "p3", name: "Cyra", role: "Rogue", hp: 6, hpMax: 4, mp: 0, mpMax: 1, image: placeholderSVG("Cyra", 200, 200) },
+	{ id: "p4", name: "Dru", role: "Cleric", hp: 8, hpMax: 5, mp: 8, mpMax: 8, image: placeholderSVG("Dru", 200, 200) },
+  ],
+  actions: [], // Hooked up, set from elsewhere
+};
+
+const Rooms = [ // These are monsters with power -1 
+  { name: "Haunted School",
+	image: "images/HauntedSchool.png",
+    power: -1,
+  },
+  { name: "Lockers",
+	image: "images/Lockers.png",
+    power: -1,
+  },
+  { name: "Spooky Classroom",
+	image: "images/Classroom2.png",
+    power: -1,
+  },
+  { name: "Haunted Classroom",
+	image: "images/Classroom2.png",
+    power: -1,
+  },
+  { name: "Dean Diablo's Office",
+	image: "images/DeansOffice.png",
+    power: -1,
+  },
+]
+const Beastiary = [ // Kept in sync with Rooms - 1
+  { name: "Locker Ghouls",
+	image: 'images/LockersGhouls.png',
+	power: 3,
+	hp: 2,
+	hpMax: 2,
+  },
+  { name: "Demon Teacher",
+	image: 'images/DemonTeacher.png',
+	power: 3,
+	hp: 2,
+	hpMax: 2,
+  },
+  { name: "Paper Cut Swarm",
+	image: 'images/PaperCutSwarm.png',
+	power: 3,
+	hp: 2,
+	hpMax: 2,
+  },
+  { name: "Dean Diablo",
+	image: 'images/DeanDiablo.png',
+	power: 3,
+	hp: 2,
+	hpMax: 2,
+  },
+]
+	
+/* =========================
+   Finite State Framework
+   ========================= */
+
+// 1) Enum-like state bag (elephant case)
+const State = Object.freeze({
+  EMPTY_ROOM:    "EMPTY_ROOM",
+  EMPTY_ROOM_ENTRY:    "EMPTY_ROOM_ENTRY",
+  SEARCHED_ROOM: "SEARCHED_ROOM",
+  SEARCHED_ROOM_ENTRY: "SEARCHED_ROOM_ENTRY",
+  MONSTER_APPEARS:  "MONSTER_APPEARS",
+  PLAYER_TURN:   "PLAYER_TURN",
+  MONSTER_TURN:  "MONSTER_TURN",
+  VICTORY:       "VICTORY",
+  DEFEAT:        "DEFEAT",
+});
+
+// 2) Minimal game data for this flow
+const Game = {
+  state: State.SEARCHED_ROOM_ENTRY, // starts here
+  room_index: 0,
+  clue_count: 0,
+};
+
+// 3) Small helpers
+
+function applyCounters(delta = {}, setAbs = {}) {
+  // delta: { room_index: +1/-1, clue_count: +1/-1 }
+  // setAbs: { room_index: 0, clue_count: 0 } (absolute set)
+  if ("room_index" in delta) Game.room_index += delta.room_index;
+  if ("clue_count" in delta) Game.clue_count += delta.clue_count;
+  if ("room_index" in setAbs) Game.room_index = setAbs.room_index;
+  if ("clue_count" in setAbs) Game.clue_count = setAbs.clue_count;
+  if (Game.room_index < 0) Game.room_index = 0;
+  if (Game.clue_count > 3) { alert("Solved a Mystery!"); Game.clue_count = 0; }
+}
+
+function makeAction(label, effect) {
+  return {
+    id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    label,
+    handler: () => {
+      effect();                    // adjust counters / do effects
+      // transition happens inside each effect via go(nextState)
+    },
+  };
+}
+
+function go(nextState) {
+  console.log("State:"+Game.state+" room:"+Game.room_index+" clues:"+Game.clue_count);
+  Game.state = nextState;
+  const fn = EnterHandlers[nextState];
+  if (fn) fn();
+}
+
+// 4) Enter-state hooks: add buttons and leave TODO comments for future logic
+const EnterHandlers = {
+  [State.EMPTY_ROOM]: function enter_EMPTY_ROOM() {
+    setStory("You enter an empty room... (room#"+Game.room_index+")");
+	
+    setActions([
+      makeAction("Search and find monsters", () => { GameUI.setMonster(Beastiary[Game.room_index-1]); go(State.MONSTER_TURN); }),
+      makeAction("Search and find nothing",  () => { go(State.SEARCHED_ROOM); }),
+      makeAction("Search and find loot",     () => { go(State.VICTORY); }),
+      makeAction("Search and find a clue",   () => { applyCounters({ clue_count: +1 }); go(State.EMPTY_ROOM); }),
+      makeAction("Next Room (monster)",      () => { applyCounters({ room_index: +1 }); go(State.MONSTER_APPEARS); }),
+      makeAction("Next Room (empty)",        () => { applyCounters({ room_index: +1 }); go(State.EMPTY_ROOM); }),
+      makeAction("Retreat",                  () => { applyCounters({ room_index: -1 }); go(State.SEARCHED_ROOM_ENTRY); }),
+    ]);
+  },
+
+  [State.SEARCHED_ROOM]: function enter_SEARCHED_ROOM() {
+    //setStory("You've searched this room. Decide your next move.");
+    setActions([
+      makeAction("Next Room (monster)", () => { applyCounters({ room_index: +1 }); go(State.MONSTER_APPEARS); }),
+      makeAction("Next Room (empty)",   () => { applyCounters({ room_index: +1 }); go(State.EMPTY_ROOM_ENTRY); }),
+      makeAction("Retreat",             () => { applyCounters({ room_index: -1 }); go(State.SEARCHED_ROOM_ENTRY); }),
+    ]);
+  },
+
+  // Room Entry events 
+  // Maybe what you really need is a general action make available function:
+  // if items allow picking them up, if room not searched, allow search...
+  [State.MONSTER_APPEARS]: function enter_MONSTER_APPEARS() {
+    setStory("You encounter a monster.");
+	GameUI.setMonster(Beastiary[Game.room_index-1]);
+	go(State.PLAYER_TURN);
+  },
+  [State.EMPTY_ROOM_ENTRY]: function EMPTY_ROOM_ENTRY() {
+    setStory("You enter a room that appears to be empty.");
+	GameUI.setMonster(Rooms[Game.room_index]);
+	go(State.EMPTY_ROOM);
+  },
+  [State.SEARCHED_ROOM_ENTRY]: function SEARCHED_ROOM_ENTRY() {
+    setStory("You enter an empty room.");
+	GameUI.setMonster(Rooms[Game.room_index]);
+	go(State.SEARCHED_ROOM);
+  },
+
+  [State.PLAYER_TURN]: function enter_PLAYER_TURN() {
+    // TODO: setStory("It's your turn."); enable combat UI, target selection, etc.
+    setActions([
+      makeAction("Retreat",      () => { setStory("You retreat to the last room."); applyCounters({ room_index: -1 }); go(State.SEARCHED_ROOM_ENTRY); }),
+      makeAction("Fight Poorly", () => { setStory("You didn't kill the monster..."); GameUI.setMonsterHP(1); go(State.MONSTER_TURN); }),
+      makeAction("Fight Well",   () => { setStory("You killed the monster."); GameUI.setMonsterHP(0); go(State.VICTORY); }),
+    ]);
+  },
+
+  [State.MONSTER_TURN]: function enter_MONSTER_TURN() {
+    setStory("The monster attacks.");
+    setActions([
+      makeAction("Defend Well",    () => { setStory("You take no damage."); go(State.PLAYER_TURN); }),
+      makeAction("Defend Poorly",  () => { setStory("You take heavy damage (TODO).");go(State.DEFEAT); }),
+    ]);
+  },
+
+  [State.VICTORY]: function enter_VICTORY() {
+    setStory("There's treasure here.");
+    setActions([
+      makeAction("Take Loot", () => { setStory("You got some loot."); go(State.EMPTY_ROOM); }),
+    ]);
+  },
+
+  [State.DEFEAT]: function enter_DEFEAT() {
+    setStory("You are defeated.");
+    setActions([
+      makeAction("Start Over", () => { init(); }),
+    ]);
+  },
+};
+
+// 5) Boot the state machine from the requested initial state & counters
+function startGameFlow() {
+  Game.room_index = 0;
+  Game.clue_count = 0;
+  Game.state = State.SEARCHED_ROOM_ENTRY;
+  go(Game.state);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+  </script>
+</body>
+</html>
