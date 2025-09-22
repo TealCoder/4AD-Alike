@@ -128,7 +128,9 @@
       mix-blend-mode: normal;
     }
 
-    .story { padding: 12px 14px; line-height: 1.45; color: var(--muted); }
+    .story { padding: 12px 14px; line-height: 1.45; color: var(--muted); 
+			  max-height: 10em;   /* about 5 lines tall */
+			  overflow-y: auto; }
 
     .actions { padding: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .action-btn {
@@ -217,7 +219,7 @@
               <span class="label">HP</span>
               <div class="bar" aria-label="Monster HP">
                 <div class="bar-fill" id="monster-hp-fill" style="background: var(--hp); width: 50%"></div>
-                <div class="bar-text" id="monster-hp-text">0 / 0</div>
+                <div class="bar-text" id="monster-hp-fill-text">0 / 0</div>
               </div>
             </div>
           </div>
@@ -294,10 +296,11 @@ function makeBar(id, colorCSSVar, current, max, aria) {
 function percent(cur, max) { return Math.max(0, Math.min(100, max > 0 ? (cur / max) * 100 : 0)); }
 
 function setBar(idBase, cur, max) {
+  console.log(`setBar ${idBase} ${cur} / ${max}`);
   const fill = document.getElementById(idBase);
   const text = document.getElementById(idBase + '-text');
-  if (fill) fill.style.width = `${percent(cur, max)}%`;
-  if (text) text.textContent = `${cur} / ${max}`;
+  fill.style.width = `${percent(cur, max)}%`;
+  text.textContent = `${cur} / ${max}`;
 }
 
 /* =========================
@@ -306,7 +309,7 @@ function setBar(idBase, cur, max) {
 
 // ===== Monster UI =====
 function renderMonster(mon) {
-  document.getElementById('monster-img').src = mon.image || placeholderSVG('Monster');
+  document.getElementById('monster-img').src = mon.image;
   document.getElementById('monster-name').textContent = mon.name;
   if (mon.power > 0)
   {
@@ -376,12 +379,15 @@ function setMP(id, mp, mpMax) {
 }
 
 // ===== Story Text =====
-function setStory(text) { document.getElementById('story').innerHTML += text +"<br>"; }
+function setStory(text) { 
+  storyEl = document.getElementById('story')
+  storyEl.innerHTML += text +"<br>";
+  // Always scroll to bottom to show the latest lines
+  storyEl.scrollTop = storyEl.scrollHeight;
+}
 
 // ===== Init =====
 function init() {
-  // Example: update bars over time to demonstrate dynamic UI
-  // setTimeout(() => setHP('p2', 180), 1200);
   Game.room_index = 0;
   Game.clue_count = 0;
   renderParty(state.party); // TODO
@@ -400,10 +406,10 @@ window.GameUI = {
 const state = {
   monster: {}, // Hooked up, don't set here 
   party: [ // Not hooked up yet
-	{ id: "p1", name: "Aeris", role: "Wizard", hp: 4, hpMax: 3, mp: 10, mpMax: 10, image: placeholderSVG("Wizard", 200, 200) },
-	{ id: "p2", name: "Brann", role: "Warrior", hp: 10, hpMax: 7, mp: 0, mpMax: 1, image: placeholderSVG("Brann", 200, 200) },
-	{ id: "p3", name: "Cyra", role: "Rogue", hp: 6, hpMax: 4, mp: 0, mpMax: 1, image: placeholderSVG("Cyra", 200, 200) },
-	{ id: "p4", name: "Dru", role: "Cleric", hp: 8, hpMax: 5, mp: 8, mpMax: 8, image: placeholderSVG("Dru", 200, 200) },
+	{ id: "p1", name: "Aeris", role: "Wizard", hp: 3, hpMax: 3, mp: 10, mpMax: 10, image: placeholderSVG("Aeris", 200, 200) },
+	{ id: "p2", name: "Brann", role: "Warrior", hp: 7, hpMax: 7, mp: 0, mpMax: 1, image: placeholderSVG("Brann", 200, 200) },
+	{ id: "p3", name: "Cyra", role: "Rogue", hp: 4, hpMax: 4, mp: 0, mpMax: 1, image: placeholderSVG("Cyra", 200, 200) },
+	{ id: "p4", name: "Dru", role: "Cleric", hp: 5, hpMax: 5, mp: 8, mpMax: 8, image: placeholderSVG("Dru", 200, 200) },
   ],
   actions: [], // Hooked up, set from elsewhere
 };
@@ -491,6 +497,7 @@ function applyCounters(delta = {}, setAbs = {}) {
   if ("room_index" in setAbs) Game.room_index = setAbs.room_index;
   if ("clue_count" in setAbs) Game.clue_count = setAbs.clue_count;
   if (Game.room_index < 0) Game.room_index = 0;
+  if (Game.room_index > 5) setStory("That's the end; that's all the rooms there are.");
   if (Game.clue_count > 3) { alert("Solved a Mystery!"); Game.clue_count = 0; }
 }
 
@@ -574,6 +581,7 @@ const EnterHandlers = {
   },
 
   [State.VICTORY]: function enter_VICTORY() {
+	GameUI.setMonster(Rooms[Game.room_index]);
     setStory("There's treasure here.");
     setActions([
       makeAction("Take Loot", () => { setStory("You got some loot."); go(State.EMPTY_ROOM); }),
