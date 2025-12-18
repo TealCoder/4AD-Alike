@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Spelling Game Test (TSV loader)</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 16px; }
+    .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0 10px; }
+    label { display: inline-flex; gap: 8px; align-items: center; }
+    input[type="number"] { width: 90px; }
+    #status { margin: 8px 0 16px; color: #333; }
+
+    #quiz-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+
+    .quiz-modal {
+      background: #fff;
+      padding: 16px 20px;
+      border-radius: 10px;
+      max-width: 980px;
+      width: 95%;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+      max-height: 85vh;
+      overflow: auto;
+    }
+
+    .quiz-modal h2 { margin: 0 0 12px; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 14px; }
+    th, td { border: 1px solid #ccc; padding: 6px; vertical-align: top; }
+    th { background: #f0f0f0; }
+
+    .col-action { width: 8%; white-space: nowrap; }
+    .col-question { width: 32%; }
+    .col-user { width: 22%; }
+    .col-correct { width: 28%; }
+    .col-mistakes { width: 6%; text-align: center; }
+    .col-roll { width: 6%; text-align: center; }
+
+    .user-answer input { width: 100%; box-sizing: border-box; }
+
+    .correct-answer { font-family: monospace; white-space: pre-wrap; }
+    .mistake { color: red; font-weight: bold; }
+
+    .quiz-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+    }
+
+    .total-mistakes { font-weight: bold; }
+    button { padding: 6px 12px; cursor: pointer; }
+    .small { font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+
+  <h1>Spelling Game Test Page</h1>
+
+  <div class="controls">
+    <label>
+      Number of questions
+      <input id="numQuestions" type="number" min="1" step="1" value="5" />
+    </label>
+
+    <label>
+      <input id="includeActions" type="checkbox" />
+      Include Action column (1., 2., 3., ...)
+    </label>
+
+    <button id="startBtn">Start Quiz</button>
+  </div>
+
+  <div class="controls">
+    <label>
+      Load DouLingoWords.txt (answer<TAB>clue)
+      <input id="fileInput" type="file" accept=".txt,.tsv" />
+    </label>
+    <button id="reloadBtn" title="Tries fetch('DouLingoWords.txt') again">Try auto-load DouLingoWords.txt</button>
+  </div>
+
+  <div id="status" class="small"></div>
+
+<script>
+  // Default fallback questions (used if no file loaded)
+  let QUESTIONS = [
+    { clue: "Feline pet", answer: "cat" },
+    { clue: "Opposite of cold", answer: "hot" },
+    { clue: "Baby dog", answer: "puppy" },
+    { clue: "Color of grass", answer: "green" },
+    { clue: "Star at the center of our solar system", answer: "sun" },
+    { clue: "Day after Monday", answer: "tuesday" },
+    { clue: "Frozen water", answer: "ice" },
+    { clue: "Not old", answer: "new" },
+    { clue: "Large body of water", answer: "ocean" },
+    { clue: "Man's best friend", answer: "dog" },
+    { clue: "To sleep lightly", answer: "nap" },
+    { clue: "First month of the year", answer: "january" }
+  ];
+
+  const statusEl = document.getElementById("status");
+  function setStatus(msg) { statusEl.textContent = msg; }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function pickRandomQuestions(count) {
+    const indices = Array.from(QUESTIONS.keys());
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    return indices.slice(0, count).map(i => QUESTIONS[i]);
+  }
+
+  // Levenshtein edit distance
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return dp[m][n];
+  }
+
+  // for auto-5 rule: any overlap in letters/digits (ignoring spaces/punct)
+  function hasAnyAlnumOverlap(correctRaw, userRaw) {
+    const c = (correctRaw || "").toLowerCase().match(/[a-z0-9]/g) || [];
+    const u = (userRaw || "").toLowerCase().match(/[a-z0-9]/g) || [];
+    if (c.length === 0 || u.length === 0) return false;
+    const setC = new Set(c);
+    for (const ch of u) if (setC.has(ch)) return true;
+    return false;
+  }
+
+  // Remove spaces ONLY (punct stays)
+  function removeSpaces(s) {
+    return String(s || "").replace(/\s+/g, "");
+  }
+
+  // New scoring:
+  // - spaces excluded from mistakes (removed before distance)
+  // - no special missing/extra word rules
+  // - keep auto-5 if nothing matches (alnum overlap)
+  // - cap at 5
+  function computeMistakes(correctRaw, userRaw) {
+    if (!hasAnyAlnumOverlap(correctRaw, userRaw)) return 5;
+    const c = removeSpaces(correctRaw).toLowerCase();
+    const u = removeSpaces(userRaw).toLowerCase();
+    const d = levenshtein(c, u);
+    return Math.min(5, d);
+  }
+
+  // Highlighting: compute diff on de-spaced strings,
+  // then map highlights back onto the original correct string (spaces never highlighted).
+  function highlightCorrectIgnoringSpaces(correctRaw, userRaw) {
+    const correctChars = Array.from(String(correctRaw || ""));
+    const correctNoSpace = correctChars.filter(ch => !/\s/.test(ch)).join("");
+    const userNoSpace = removeSpaces(userRaw);
+
+    const A = correctNoSpace.toLowerCase();
+    const B = String(userNoSpace || "").toLowerCase();
+
+    const m = A.length, n = B.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = A[i - 1] === B[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+
+    // Backtrack to get a per-character mark for correctNoSpace characters
+    let i = m, j = n;
+    const mark = new Array(m).fill(false); // mark[k]=true means correctNoSpace[k] is wrong (sub/del)
+
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && A[i - 1] === B[j - 1] && dp[i][j] === dp[i - 1][j - 1]) {
+        // match
+        i--; j--;
+      } else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) {
+        // substitution => mark that correct char
+        mark[i - 1] = true;
+        i--; j--;
+      } else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) {
+        // deletion => mark that correct char
+        mark[i - 1] = true;
+        i--;
+      } else {
+        // insertion => extra user char, nothing to mark in correct
+        j--;
+      }
+    }
+
+    // Rebuild HTML over the ORIGINAL correctRaw, consuming marks for non-space chars
+    let k = 0; // index into correctNoSpace / mark
+    let html = "";
+    for (const ch of correctChars) {
+      if (/\s/.test(ch)) {
+        html += escapeHtml(ch); // spaces never highlighted
+      } else {
+        const isWrong = (k < mark.length) ? mark[k] : false;
+        if (isWrong) html += `<span class="mistake">${escapeHtml(ch)}</span>`;
+        else html += escapeHtml(ch);
+        k++;
+      }
+    }
+    return html || escapeHtml(correctRaw);
+  }
+
+  /**
+   * showQuiz(numQuestions, actions?)
+   * returns Promise that resolves to rolls array (6 - mistakes) on OK.
+   */
+  function showQuiz(numQuestions, actions) {
+    const selected = pickRandomQuestions(numQuestions);
+    const includeActionCol = Array.isArray(actions);
+
+    return new Promise((resolve) => {
+      const headerCells = [
+        includeActionCol ? `<th class="col-action">Action</th>` : ``,
+        `<th class="col-question">Question</th>`,
+        `<th class="col-user">Your Answer</th>`,
+        `<th class="col-correct">Real Answer</th>`,
+        `<th class="col-mistakes">Mistakes</th>`,
+        `<th class="col-roll">Roll</th>`
+      ].filter(Boolean).join("");
+
+      const rowsHtml = selected.map((q, idx) => `
+        <tr data-index="${idx}">
+          ${includeActionCol ? `<td class="col-action">${escapeHtml(actions[idx] ?? "")}</td>` : ``}
+          <td class="col-question">${escapeHtml(q.clue)}</td>
+          <td class="col-user user-answer">
+            <input type="text" data-index="${idx}" autocomplete="off" />
+          </td>
+          <td class="col-correct correct-answer"></td>
+          <td class="col-mistakes mistake-count"></td>
+          <td class="col-roll roll-cell"></td>
+        </tr>
+      `).join("");
+
+      const overlay = document.createElement("div");
+      overlay.id = "quiz-overlay";
+      overlay.innerHTML = `
+        <div class="quiz-modal">
+          <h2>Spelling Quiz</h2>
+          <table>
+            <thead><tr>${headerCells}</tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <div class="quiz-footer">
+            <div class="total-mistakes">Total mistakes: <span id="total-mistakes">0</span></div>
+            <div><button id="quiz-submit">Submit</button></div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const submitButton = overlay.querySelector("#quiz-submit");
+      const totalMistakesSpan = overlay.querySelector("#total-mistakes");
+      const tbody = overlay.querySelector("tbody");
+      const firstInput = overlay.querySelector('input[data-index="0"]');
+
+      let graded = false;
+      const rolls = new Array(selected.length).fill(6);
+
+      submitButton.addEventListener("click", () => {
+        if (!graded) {
+          let totalMistakes = 0;
+          const rows = Array.from(tbody.querySelectorAll("tr[data-index]"));
+
+          rows.forEach(row => {
+            const idx = parseInt(row.getAttribute("data-index"), 10);
+            const correct = selected[idx].answer;
+            const input = row.querySelector('input[data-index]');
+            const userAns = input.value;
+
+            const mistakes = computeMistakes(correct, userAns);
+            const roll = 6 - mistakes;
+
+            rolls[idx] = roll;
+            totalMistakes += mistakes;
+
+            row.querySelector(".correct-answer").innerHTML = highlightCorrectIgnoringSpaces(correct, userAns);
+            row.querySelector(".mistake-count").textContent = String(mistakes);
+            row.querySelector(".roll-cell").textContent = String(roll);
+
+            input.disabled = true;
+          });
+
+          totalMistakesSpan.textContent = String(totalMistakes);
+          graded = true;
+          submitButton.textContent = "OK";
+        } else {
+          overlay.remove();
+          resolve(rolls);
+        }
+      });
+
+      if (firstInput) firstInput.focus();
+    });
+  }
+
+  // Parse DouLingoWords format: answer \t clue
+  function parseDouLingoText(text) {
+    const lines = String(text || "").split(/\r?\n/);
+    const out = [];
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const parts = line.split("\t");
+      if (parts.length < 2) continue;
+
+      const answer = parts[0].trim();
+      const clue = parts.slice(1).join("\t").trim(); // in case clue contains tabs
+      if (!answer || !clue) continue;
+
+      out.push({ answer, clue });
+    }
+    return out;
+  }
+
+  async function tryAutoLoad() {
+    try {
+      const resp = await fetch("DouLingoWords.txt", { cache: "no-store" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+      const parsed = parseDouLingoText(text);
+      if (parsed.length === 0) throw new Error("Parsed 0 valid lines (needs answer<TAB>clue).");
+
+      QUESTIONS = parsed;
+      setStatus(`Loaded ${QUESTIONS.length} entries from DouLingoWords.txt via fetch().`);
+    } catch (e) {
+      setStatus(`Auto-load failed (this is normal if you're opening the HTML file directly).
+Tip: run a local server or use the file picker. Details: ${e.message}`);
+    }
+  }
+
+  // Demo wiring
+  const startBtn = document.getElementById("startBtn");
+  const numInput = document.getElementById("numQuestions");
+  const includeActionsCb = document.getElementById("includeActions");
+  const fileInput = document.getElementById("fileInput");
+  const reloadBtn = document.getElementById("reloadBtn");
+
+  startBtn.addEventListener("click", async () => {
+    const max = QUESTIONS.length;
+    let n = parseInt(numInput.value, 10);
+    if (isNaN(n) || n <= 0) {
+      alert("Please enter a positive number.");
+      return;
+    }
+    n = Math.min(n, max);
+
+    let actions;
+    if (includeActionsCb.checked) {
+      actions = Array.from({ length: n }, (_, i) => `${i + 1}.`);
+    }
+
+    const rolls = await showQuiz(n, actions);
+    console.log("Returned rolls array:", rolls);
+    alert("Returned rolls array:\n" + JSON.stringify(rolls));
+  });
+
+  fileInput.addEventListener("change", async (ev) => {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const parsed = parseDouLingoText(text);
+
+    if (parsed.length === 0) {
+      alert("Could not parse any lines. Format must be: answer<TAB>clue");
+      return;
+    }
+
+    QUESTIONS = parsed;
+    setStatus(`Loaded ${QUESTIONS.length} entries from file: ${file.name}`);
+  });
+
+  reloadBtn.addEventListener("click", () => {
+    tryAutoLoad();
+  });
+
+  // Start: try auto-load; fallback is built-in questions or file picker.
+  tryAutoLoad();
+</script>
+
+</body>
+</html>

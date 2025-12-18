@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Vietnamese Input with Telex Help</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #111827;        /* dark slate */
+      --fg: #e5e7eb;        /* light gray */
+      --muted: #9ca3af;     /* muted gray */
+      --accent: #60a5fa;    /* blue */
+      --surface: #1f2937;   /* slate surface */
+      --ring: rgba(96,165,250,.5);
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 8vh auto;
+      padding: 24px;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 1rem; }
+    .field-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .field-row input[type="text"] {
+      flex: 1;
+      padding: .75rem .875rem;
+      border-radius: .625rem;
+      border: 1px solid #374151;
+      background: var(--surface);
+      color: var(--fg);
+      outline: none;
+    }
+    .field-row input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+    .help-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #0b1220;
+      color: var(--fg);
+      cursor: pointer;
+    }
+    .help-btn:hover { border-color: #4b5563; }
+    .help-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+    /* Popover */
+    .popover {
+      position: absolute;
+      top: calc(100% + .5rem);
+      right: 0;
+      width: min(680px, 92vw);
+      max-height: 70vh;
+      overflow: auto;
+      border-radius: .75rem;
+      border: 1px solid #374151;
+      background: #0b1220;
+      box-shadow:
+        0 12px 32px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.03);
+      padding: .75rem;
+      display: none;
+      z-index: 1000;
+    }
+    .popover[data-open="true"] { display: block; }
+    .popover h2 {
+      margin: .25rem 0 .5rem;
+      font-size: 1rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: .5rem 1rem;
+      align-items: baseline;
+    }
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: .375rem;
+      padding: .1rem .35rem;
+      color: var(--fg);
+      white-space: nowrap;
+    }
+    .muted { color: var(--muted); }
+    .row { display: contents; }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: .5rem;
+      gap: .75rem;
+    }
+    .link {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .link:hover { text-decoration: underline; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Vietnamese Input (Telex) with Inline Help</h1>
+    <p class="muted">Type in the box. Click <span aria-hidden="true">?</span> (or press <span class="kbd">?</span>) for a quick Telex guide. Press <span class="kbd">Esc</span> to close.</p>
+
+    <div class="field-row" id="fieldRow">
+      <input id="vietInput" type="text" inputmode="latin" autocomplete="off"
+             aria-label="Vietnamese text input (Telex)"
+             placeholder="Type Vietnamese here… (e.g., aaw = ă, as = á, dd = đ)" 
+             data-vnkeys/>
+      <button id="helpBtn" class="help-btn" aria-haspopup="dialog" aria-controls="helpCard"
+              aria-expanded="false" title="Telex help (click or press ?)">
+        <!-- inline SVG question mark -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 17h.01M9.09 9a3 3 0 1 1 5.82 1c0 2-3 2-3 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <span class="sr-only">Telex help</span>
+      </button>
+
+      <!-- Popover card -->
+      <section id="helpCard" class="popover" role="dialog" aria-modal="false" aria-label="Telex typing help" data-open="false">
+        <h2>Telex Rules (Quick Reference)</h2>
+        <div class="grid" aria-describedby="desc">
+          <div id="desc" class="row muted">Vowel modifiers</div> <div></div>
+
+          <div class="row"><div><span class="kbd">aa</span> → <strong>â</strong></div><div>Double the vowel to add a “hat” (â, ê, ô)</div></div>
+          <div class="row"><div><span class="kbd">ee</span> → <strong>ê</strong></div><div></div></div>
+          <div class="row"><div><span class="kbd">oo</span> → <strong>ô</strong></div><div></div></div>
+          <div class="row"><div><span class="kbd">aw</span> → <strong>ă</strong></div><div><span class="kbd">w</span> adds “ă, ơ, ư”</div></div>
+          <div class="row"><div><span class="kbd">ow</span> → <strong>ơ</strong></div><div></div></div>
+          <div class="row"><div><span class="kbd">uw</span> → <strong>ư</strong></div><div></div></div>
+          <div class="row"><div><span class="kbd">dd</span> → <strong>đ</strong></div><div><span class="kbd">d</span> + <span class="kbd">d</span> becomes “đ”</div></div>
+
+          <div class="row" style="margin-top:.25rem;"><div class="muted">Tones</div> <div></div></div>
+          <div class="row"><div><span class="kbd">s</span> → <strong>´</strong> (sắc)</div><div><em>as</em> → <strong>á</strong></div></div>
+          <div class="row"><div><span class="kbd">f</span> → <strong>`</strong> (huyền)</div><div><em>af</em> → <strong>à</strong></div></div>
+          <div class="row"><div><span class="kbd">r</span> → <strong>ˇ</strong> (hỏi)</div><div><em>ar</em> → <strong>ả</strong></div></div>
+          <div class="row"><div><span class="kbd">x</span> → <strong>~</strong> (ngã)</div><div><em>ax</em> → <strong>ã</strong></div></div>
+          <div class="row"><div><span class="kbd">j</span> → <strong>·</strong> (nặng)</div><div><em>aj</em> → <strong>ạ</strong></div></div>
+
+          <div class="row" style="margin-top:.25rem;"><div class="muted">Combine freely</div> <div></div></div>
+          <div class="row"><div><em>aaws</em> → <strong>ắ</strong></div><div><em>oors</em> → <strong>ố</strong></div></div>
+          <div class="row"><div><em>owr</em> → <strong>ở</strong></div><div><em>ddas</em> → <strong>đá</strong></div></div>
+        </div>
+
+        <div class="footer">
+          <small class="muted">Tip: order doesn’t matter — the IME normalizes placement.</small>
+          <div>
+            <a class="link" href="https://unikey.org/en/telex.html" target="_blank" rel="noopener">Full Telex table</a>
+            &nbsp;·&nbsp;
+            <a class="link" href="https://viettyping.com/telex" target="_blank" rel="noopener">Interactive demo</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Your Telex IME script -->
+  <script src="VNKeys.js"></script>
+  <script>
+    // 1) OBE?
+
+    // 2) Help popover logic (accessible, keyboard-friendly)
+    (function helpPopover() {
+      const btn   = document.getElementById('helpBtn');
+      const card  = document.getElementById('helpCard');
+      const row   = document.getElementById('fieldRow');
+      const input = document.getElementById('vietInput');
+
+      function open() {
+        card.setAttribute('data-open', 'true');
+        btn.setAttribute('aria-expanded', 'true');
+        // keep focus on input to continue typing; or focus card if you prefer
+      }
+      function close() {
+        card.setAttribute('data-open', 'false');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+      function toggle() {
+        const isOpen = card.getAttribute('data-open') === 'true';
+        isOpen ? close() : open();
+      }
+
+      // Click the ? button
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggle();
+      });
+
+      // Close when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!row.contains(e.target)) close();
+      });
+
+      // Keyboard: ? toggles when input or button is focused
+      const questionKey = (e) => e.key === '?' || (e.shiftKey && e.key === '/');
+      document.addEventListener('keydown', (e) => {
+        const focusEl = document.activeElement;
+        const inScope = focusEl === input || focusEl === btn || row.contains(focusEl);
+        if (!inScope) return;
+
+        if (questionKey(e)) {
+          e.preventDefault();
+          toggle();
+        } else if (e.key === 'Escape') {
+          close();
+        }
+      });
+
+      // Reposition (if wrapping) — here we keep it anchored to the field
+      const ro = new ResizeObserver(() => { /* layout stays fine in this simple example */ });
+      ro.observe(row);
+    })();
+  </script>
+</body>
+</html>
