@@ -217,11 +217,7 @@ function telexCheatSheetHtml() {
       <div class="row muted">Vowel modifiers</div><div></div>
 
       <div class="row"><div><span class="kbd">aa</span> → <strong>â</strong></div><div>Double the vowel to add a “hat” (â, ê, ô)</div></div>
-      <div class="row"><div><span class="kbd">ee</span> → <strong>ê</strong></div><div></div></div>
-      <div class="row"><div><span class="kbd">oo</span> → <strong>ô</strong></div><div></div></div>
       <div class="row"><div><span class="kbd">aw</span> → <strong>ă</strong></div><div><span class="kbd">w</span> adds “ă, ơ, ư”</div></div>
-      <div class="row"><div><span class="kbd">ow</span> → <strong>ơ</strong></div><div></div></div>
-      <div class="row"><div><span class="kbd">uw</span> → <strong>ư</strong></div><div></div></div>
       <div class="row"><div><span class="kbd">dd</span> → <strong>đ</strong></div><div><span class="kbd">d</span> + <span class="kbd">d</span> becomes “đ”</div></div>
 
       <div class="row spacer"><div class="muted">Tones</div><div></div></div>
