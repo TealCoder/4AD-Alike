@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Spelling Game Demo Launcher</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 16px; }
+    .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0 10px; }
+    label { display: inline-flex; gap: 8px; align-items: center; }
+    input[type="number"] { width: 90px; }
+    #status { margin: 8px 0 16px; color: #333; font-size: 12px; }
+    button { padding: 6px 12px; cursor: pointer; }
+    .hint { color:#666; font-size:12px; margin-top:6px; }
+    code { background:#f3f4f6; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <h1>Spelling Game Demo Launcher</h1>
+
+  <div class="controls">
+    <label>
+      Number of questions
+      <input id="numQuestions" type="number" min="1" step="1" value="5" />
+    </label>
+
+    <label>
+      <input id="includeActions" type="checkbox" />
+      Include Action column (1., 2., 3., ...)
+    </label>
+
+    <label>
+      <input id="vnkeys" type="checkbox" />
+      VNKeys mode
+    </label>
+
+    <button id="startBtn">Start Quiz</button>
+  </div>
+
+  <div class="hint">
+    VNKeys mode expects <code>VNKeys.patched.js</code> to be next to <code>index.html</code> and <code>spellingQuiz.js</code>.
+  </div>
+
+  <div class="controls">
+    <label>
+      Load DouLingoWords.txt (answer&lt;TAB&gt;clue)
+      <input id="fileInput" type="file" accept=".txt,.tsv" />
+    </label>
+    <button id="reloadBtn" title="Tries fetch('DouLingoWords.txt') again">Try auto-load DouLingoWords.txt</button>
+  </div>
+
+  <div id="status"></div>
+
+  <script type="module">
+    import { setQuestionBank, parseDouLingoText, tryAutoLoadQuestions, showSpellingQuiz } from "./spellingQuiz.js";
+
+    const statusEl = document.getElementById("status");
+    const setStatus = (msg) => { statusEl.textContent = msg; };
+
+    const startBtn = document.getElementById("startBtn");
+    const numInput = document.getElementById("numQuestions");
+    const includeActionsCb = document.getElementById("includeActions");
+    const vnkeysCb = document.getElementById("vnkeys");
+    const fileInput = document.getElementById("fileInput");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    async function autoLoad() {
+      try {
+        const count = await tryAutoLoadQuestions("DouLingoWords.txt");
+        setStatus(`Loaded ${count} entries from DouLingoWords.txt via fetch().`);
+      } catch (e) {
+        setStatus(`Auto-load failed (normal if opening HTML directly). Use file picker or run a local server. Details: ${e.message}`);
+      }
+    }
+
+    startBtn.addEventListener("click", async () => {
+      let n = parseInt(numInput.value, 10);
+      if (isNaN(n) || n <= 0) {
+        alert("Please enter a positive number.");
+        return;
+      }
+
+      let actions;
+      if (includeActionsCb.checked) {
+        actions = Array.from({ length: n }, (_, i) => `${i + 1}.`);
+      }
+
+      const rolls = await showSpellingQuiz(n, actions, vnkeysCb.checked);
+      console.log("Returned rolls array:", rolls);
+      alert("Returned rolls array:\n" + JSON.stringify(rolls));
+    });
+
+    fileInput.addEventListener("change", async (ev) => {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+
+      const text = await file.text();
+      const parsed = parseDouLingoText(text);
+
+      if (parsed.length === 0) {
+        alert("Could not parse any lines. Format must be: answer<TAB>clue");
+        return;
+      }
+
+      setQuestionBank(parsed);
+      setStatus(`Loaded ${parsed.length} entries from file: ${file.name}`);
+    });
+
+    reloadBtn.addEventListener("click", () => autoLoad());
+
+    autoLoad();
+  </script>
+</body>
+</html>

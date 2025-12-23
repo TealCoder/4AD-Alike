@@ -1,5 +1,4 @@
 ai	whom, who, anyone
-an	An (proper name)
 anh	English, the United Kingdom, England
 anh trai	older brother, elder brother
 anh ấy	he, him
