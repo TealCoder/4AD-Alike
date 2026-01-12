@@ -226,24 +226,19 @@
         </div>
       </section>
 
-      <!-- Story / Situation Text -->
-      <section class="card story" id="story">
-        You stand before the old haunted school house. The air hums with dread...and learning potential!
-      </section>
-
-      <!-- Primary Actions -->
-      <section class="card actions" id="actions">
-        <!-- Buttons injected by JS for easy reconfiguration -->
-      </section>
-
       <!-- Party Panel -->
       <section class="card party" id="party">
         <!-- Party members injected by JS -->
       </section>
 
-      <!-- Combat Controls Placeholder -->
-      <section class="card controls-placeholder" id="combat-controls">
-        Combat controls will appear here.
+      <!-- Story / Situation Text -->
+      <section class="card story" id="story">
+        The party stands before the old haunted school house. The air hums with dread...and learning potential!<br>
+      </section>
+
+      <!-- Primary Actions -->
+      <section class="card actions" id="actions">
+        <!-- Buttons injected by JS for easy reconfiguration -->
       </section>
 
     </main>
@@ -304,6 +299,33 @@ function setBar(idBase, cur, max) {
 }
 
 /* =========================
+   Misc
+   ========================= */
+function chooseSearchResult() {
+  const msg =
+    "Until rolls are implemented:" +
+    "What was found?\n" +
+    "1) Monsters\n" +
+    "2) Nothing\n" +
+    "3) Loot\n\n" +
+    "Type 1, 2, or 3:";
+
+  const ans = prompt(msg, "1");
+
+  if (ans === null) return null; // user cancelled
+
+  const pick = String(ans).trim();
+
+  if (pick === "1") return "monsters";
+  if (pick === "2") return "nothing";
+  if (pick === "3") return "loot";
+
+  alert("Please type 1, 2, or 3.");
+  return chooseSearchResult(); // reprompt
+}
+
+
+/* =========================
    Game UI Conrols
    ========================= */
 
@@ -325,7 +347,17 @@ function renderMonster(mon) {
   console.log('monster-power: ' + mon.power);
 }
 
-function setMonster(next) { state.monster = { ...state.monster, ...next }; renderMonster(state.monster); }
+function setMonster(next) {
+  if (!next) {
+    console.warn("setMonster called with:", next, "room_index=", Game?.room_index, "state=", Game?.state);
+    // Optional: show something obvious instead of leaving stale UI
+    renderMonster({ name: "??", image: placeholderSVG("Missing"), power: -1 });
+    return;
+  }
+  state.monster = { ...state.monster, ...next };
+  renderMonster(state.monster);
+}
+
 function setMonsterHP(hp, hpMax = state.monster.hpMax) { state.monster.hp = hp; state.monster.hpMax = hpMax; setBar('monster-hp-fill', hp, hpMax); }
 
 // ===== Actions UI =====
@@ -406,56 +438,62 @@ window.GameUI = {
 const state = {
   monster: {}, // Hooked up, don't set here 
   party: [ // Not hooked up yet
-	{ id: "p1", name: "Aeris", role: "Wizard", hp: 3, hpMax: 3, mp: 10, mpMax: 10, image: placeholderSVG("Aeris", 200, 200) },
-	{ id: "p2", name: "Brann", role: "Warrior", hp: 7, hpMax: 7, mp: 0, mpMax: 1, image: placeholderSVG("Brann", 200, 200) },
-	{ id: "p3", name: "Cyra", role: "Rogue", hp: 4, hpMax: 4, mp: 0, mpMax: 1, image: placeholderSVG("Cyra", 200, 200) },
-	{ id: "p4", name: "Dru", role: "Cleric", hp: 5, hpMax: 5, mp: 8, mpMax: 8, image: placeholderSVG("Dru", 200, 200) },
+	{ id: "p1", name: "Cyra",  role: "Rogue",   hp: 4, hpMax: 4, mp: 0,  mpMax: 1,  image: "images/Cyra.png" },
+	{ id: "p2", name: "Brann", role: "Warrior", hp: 7, hpMax: 7, mp: 0,  mpMax: 1,  image: "images/Brann.png" },
+	{ id: "p3", name: "Aeris", role: "Wizard",  hp: 3, hpMax: 3, mp: 10, mpMax: 10, image: "images/Aeris.png" },
+	{ id: "p4", name: "Dru",   role: "Cleric",  hp: 5, hpMax: 5, mp: 8,  mpMax: 8,  image: "images/Dru.png" },
   ],
   actions: [], // Hooked up, set from elsewhere
 };
 
-const Rooms = [ // These are monsters with power -1 
-  { name: "Haunted School",
+const Rooms = [ // These are rooms  
+  { name: "Haunted School Entrance", // 0
 	image: "images/HauntedSchool.png",
     power: -1,
+	searched : true,
+	monster_present : false,
   },
-  { name: "Lockers",
+  { name: "Lockers", // 1
 	image: "images/Lockers.png",
     power: -1,
+	monster_present : true,
   },
-  { name: "Spooky Classroom",
+  { name: "Spooky Classroom", // 2
 	image: "images/Classroom2.png",
     power: -1,
+	monster_present : true,
   },
-  { name: "Haunted Classroom",
+  { name: "Haunted Classroom", // 3
 	image: "images/Classroom2.png",
     power: -1,
+	monster_present : true,
   },
-  { name: "Dean Diablo's Office",
+  { name: "Dean Diablo's Office", // 4
 	image: "images/DeansOffice.png",
     power: -1,
+	monster_present : true,
   },
 ]
 const Beastiary = [ // Kept in sync with Rooms - 1
-  { name: "Locker Ghouls",
+  { name: "Locker Ghouls", // 1
 	image: 'images/LockersGhouls.png',
 	power: 3,
 	hp: 2,
 	hpMax: 2,
   },
-  { name: "Demon Teacher",
+  { name: "Demon Teacher", // 2
 	image: 'images/DemonTeacher.png',
 	power: 3,
 	hp: 2,
 	hpMax: 2,
   },
-  { name: "Paper Cut Swarm",
+  { name: "Paper Cut Swarm", // 3
 	image: 'images/PaperCutSwarm.png',
 	power: 3,
 	hp: 2,
 	hpMax: 2,
   },
-  { name: "Dean Diablo",
+  { name: "Dean Diablo", // 4
 	image: 'images/DeanDiablo.png',
 	power: 3,
 	hp: 2,
@@ -469,10 +507,8 @@ const Beastiary = [ // Kept in sync with Rooms - 1
 
 // 1) Enum-like state bag (elephant case)
 const State = Object.freeze({
-  EMPTY_ROOM:    "EMPTY_ROOM",
-  EMPTY_ROOM_ENTRY:    "EMPTY_ROOM_ENTRY",
-  SEARCHED_ROOM: "SEARCHED_ROOM",
-  SEARCHED_ROOM_ENTRY: "SEARCHED_ROOM_ENTRY",
+  ROOM:    "EMPTY_ROOM",
+  ROOM_ENTRY:    "ROOM_ENTRY",
   MONSTER_APPEARS:  "MONSTER_APPEARS",
   PLAYER_TURN:   "PLAYER_TURN",
   MONSTER_TURN:  "MONSTER_TURN",
@@ -482,7 +518,7 @@ const State = Object.freeze({
 
 // 2) Minimal game data for this flow
 const Game = {
-  state: State.SEARCHED_ROOM_ENTRY, // starts here
+  state: State.ROOM, // starts here
   room_index: 0,
   clue_count: 0,
 };
@@ -497,7 +533,10 @@ function applyCounters(delta = {}, setAbs = {}) {
   if ("room_index" in setAbs) Game.room_index = setAbs.room_index;
   if ("clue_count" in setAbs) Game.clue_count = setAbs.clue_count;
   if (Game.room_index < 0) Game.room_index = 0;
-  if (Game.room_index > 5) setStory("That's the end; that's all the rooms there are.");
+  if (Game.room_index >= Rooms.length) {
+    setStory("That's the end! That's all the rooms there are so far!");
+    Game.room_index = Rooms.length - 1;
+  }
   if (Game.clue_count > 3) { alert("Solved a Mystery!"); Game.clue_count = 0; }
 }
 
@@ -512,84 +551,118 @@ function makeAction(label, effect) {
   };
 }
 
+function refreshMonsterPanelForCurrentState() {
+  // States where you want to show an actual monster
+  if ([State.MONSTER_APPEARS, State.PLAYER_TURN, State.MONSTER_TURN].includes(Game.state)) {
+    if (Game.room_index > 0) GameUI.setMonster(Beastiary[Game.room_index - 1]);
+    return;
+  }
+  // Otherwise show the room
+  GameUI.setMonster(Rooms[Game.room_index]);
+}
+
 function go(nextState) {
   console.log("State:"+Game.state+" room:"+Game.room_index+" clues:"+Game.clue_count);
   Game.state = nextState;
   const fn = EnterHandlers[nextState];
   if (fn) fn();
+
+  // Force UI sync even if an enter handler forgets to set the monster/room
+  refreshMonsterPanelForCurrentState();
+}
+
+function doSearchAction()
+{
+  const result = chooseSearchResult();
+  if (result === null) return; // cancelled: do nothing
+  
+  Rooms[Game.room_index].searched = true;
+
+  if (result === "loot") {
+    setStory("There's treasure here.");
+    setActions([
+      makeAction("Take Loot", () => { setStory("You got some loot."); go(State.ROOM); }),
+    ]);
+    return;
+  }
+
+  if (result === "monsters") {
+    if (Game.room_index === 0) {
+      setStory("You search, but this place is too quiet... no monsters here.");
+      go(State.ROOM);
+      return;
+    }
+    GameUI.setMonster(Beastiary[Game.room_index - 1]);
+    go(State.MONSTER_TURN);
+    return;
+  }
+
+  // nothing
+  setStory("You find nothing.");
+  go(State.ROOM);
 }
 
 // 4) Enter-state hooks: add buttons and leave TODO comments for future logic
 const EnterHandlers = {
-  [State.EMPTY_ROOM]: function enter_EMPTY_ROOM() {
-    setStory("You enter an empty room... (room#"+Game.room_index+")");
+  [State.ROOM]: function enter_ROOM() {
+    setStory(Rooms[Game.room_index].name + " (room#"+Game.room_index+")");
 	
-    setActions([
-      makeAction("Search and find monsters", () => { GameUI.setMonster(Beastiary[Game.room_index-1]); go(State.MONSTER_TURN); }),
-      makeAction("Search and find nothing",  () => { go(State.SEARCHED_ROOM); }),
-      makeAction("Search and find loot",     () => { go(State.VICTORY); }),
-      makeAction("Search and find a clue",   () => { applyCounters({ clue_count: +1 }); go(State.EMPTY_ROOM); }),
-      makeAction("Next Room (monster)",      () => { applyCounters({ room_index: +1 }); go(State.MONSTER_APPEARS); }),
-      makeAction("Next Room (empty)",        () => { applyCounters({ room_index: +1 }); go(State.EMPTY_ROOM); }),
-      makeAction("Retreat",                  () => { applyCounters({ room_index: -1 }); go(State.SEARCHED_ROOM_ENTRY); }),
-    ]);
+    let actions = []
+    
+    if (!Rooms[Game.room_index].searched) { actions.push(makeAction("Search", doSearchAction)); }
+    if (Game.room_index + 1 < Rooms.length) { actions.push(makeAction("Next Room", () => { applyCounters({ room_index: +1 }); go(State.ROOM_ENTRY); })); }
+    if (Game.room_index > 0) { actions.push(makeAction("Retreat", () => { applyCounters({ room_index: -1 }); go(State.ROOM_ENTRY); })); }
+
+    console.log(actions);
+    console.log(actions.length);
+	
+    setActions(actions);
   },
 
-  [State.SEARCHED_ROOM]: function enter_SEARCHED_ROOM() {
-    //setStory("You've searched this room. Decide your next move.");
-    setActions([
-      makeAction("Next Room (monster)", () => { applyCounters({ room_index: +1 }); go(State.MONSTER_APPEARS); }),
-      makeAction("Next Room (empty)",   () => { applyCounters({ room_index: +1 }); go(State.EMPTY_ROOM_ENTRY); }),
-      makeAction("Retreat",             () => { applyCounters({ room_index: -1 }); go(State.SEARCHED_ROOM_ENTRY); }),
-    ]);
-  },
-
-  // Room Entry events 
-  // Maybe what you really need is a general action make available function:
-  // if items allow picking them up, if room not searched, allow search...
-  [State.MONSTER_APPEARS]: function enter_MONSTER_APPEARS() {
-    setStory("You encounter a monster.");
-	GameUI.setMonster(Beastiary[Game.room_index-1]);
-	go(State.PLAYER_TURN);
-  },
-  [State.EMPTY_ROOM_ENTRY]: function EMPTY_ROOM_ENTRY() {
-    setStory("You enter a room that appears to be empty.");
-	GameUI.setMonster(Rooms[Game.room_index]);
-	go(State.EMPTY_ROOM);
-  },
-  [State.SEARCHED_ROOM_ENTRY]: function SEARCHED_ROOM_ENTRY() {
-    setStory("You enter an empty room.");
-	GameUI.setMonster(Rooms[Game.room_index]);
-	go(State.SEARCHED_ROOM);
+  // Room Entry events
+  [State.ROOM_ENTRY]: function ROOM_ENTRY() {
+	if (Rooms[Game.room_index].monster_present)
+	{
+		setStory("The party encounters a monster.");
+		GameUI.setMonster(Beastiary[Game.room_index-1]);
+		go(State.PLAYER_TURN);
+	}
+	else
+	{
+		setStory("The party enters '"+Rooms[Game.room_index].name+"'.");
+		GameUI.setMonster(Rooms[Game.room_index]);
+		go(State.ROOM);
+	}
   },
 
   [State.PLAYER_TURN]: function enter_PLAYER_TURN() {
-    // TODO: setStory("It's your turn."); enable combat UI, target selection, etc.
+    // TODO: setStory("The party's turn."); enable combat UI, target selection, etc.
     setActions([
-      makeAction("Retreat",      () => { setStory("You retreat to the last room."); applyCounters({ room_index: -1 }); go(State.SEARCHED_ROOM_ENTRY); }),
-      makeAction("Fight Poorly", () => { setStory("You didn't kill the monster..."); GameUI.setMonsterHP(1); go(State.MONSTER_TURN); }),
-      makeAction("Fight Well",   () => { setStory("You killed the monster."); GameUI.setMonsterHP(0); go(State.VICTORY); }),
+      makeAction("Retreat",      () => { setStory("The party retreats to the last room."); applyCounters({ room_index: -1 }); go(State.ROOM_ENTRY); }),
+      makeAction("Fight Poorly", () => { setStory("The party didn't kill the monster..."); GameUI.setMonsterHP(1); go(State.MONSTER_TURN); }),
+      makeAction("Fight Well",   () => { setStory("The party slough the monster."); GameUI.setMonsterHP(0); go(State.VICTORY); }),
     ]);
   },
 
   [State.MONSTER_TURN]: function enter_MONSTER_TURN() {
     setStory("The monster attacks.");
     setActions([
-      makeAction("Defend Well",    () => { setStory("You take no damage."); go(State.PLAYER_TURN); }),
-      makeAction("Defend Poorly",  () => { setStory("You take heavy damage (TODO).");go(State.DEFEAT); }),
+      makeAction("Defend Well",    () => { setStory("The party takes no damage."); go(State.PLAYER_TURN); }),
+      makeAction("Defend Poorly",  () => { setStory("The party takes heavy damage (TODO).");go(State.DEFEAT); }),
     ]);
   },
 
   [State.VICTORY]: function enter_VICTORY() {
 	GameUI.setMonster(Rooms[Game.room_index]);
+	Rooms[Game.room_index].monster_present = false;
     setStory("There's treasure here.");
     setActions([
-      makeAction("Take Loot", () => { setStory("You got some loot."); go(State.EMPTY_ROOM); }),
+      makeAction("Take Loot", () => { setStory("You got some loot."); go(State.ROOM); }),
     ]);
   },
 
   [State.DEFEAT]: function enter_DEFEAT() {
-    setStory("You are defeated.");
+    setStory("The party was defeated.");
     setActions([
       makeAction("Start Over", () => { init(); }),
     ]);
@@ -600,7 +673,7 @@ const EnterHandlers = {
 function startGameFlow() {
   Game.room_index = 0;
   Game.clue_count = 0;
-  Game.state = State.SEARCHED_ROOM_ENTRY;
+  Game.state = State.ROOM;
   go(Game.state);
 }
 
