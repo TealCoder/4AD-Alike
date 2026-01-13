@@ -200,6 +200,70 @@
     @media (min-width: 768px) {
       .actions { grid-template-columns: repeat(6, 1fr); }
     }
+
+    /* Clickable portraits */
+.member .avatar img { cursor: pointer; }
+
+/* Character modal overlay */
+.char-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.char-modal {
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+  background: #121623;
+  border: 1px solid #2b3140;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+
+.char-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.char-modal-title { font-size: 1.2rem; font-weight: 800; }
+.char-modal-sub { color: var(--muted); font-size: 0.95rem; }
+
+.char-modal-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 14px;
+}
+
+.char-modal-portrait {
+  width: 220px; height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #2b3140;
+}
+
+.char-modal-close {
+  border: 1px solid #2b3140;
+  background: #1a1f2b;
+  color: #e9eefc;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.char-kv { display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px; }
+.char-kv .k { color: var(--muted); }
+.attack-list { margin: 10px 0 0; padding-left: 18px; }
+.attack-list li { margin: 6px 0; }
+.attack-meta { color: var(--muted); font-size: 0.9rem; }
+
   </style>
 </head>
 <body>
@@ -243,6 +307,30 @@
 
     </main>
   </div>
+
+  <!-- Character modal -->
+<div id="char-modal-backdrop" class="char-modal-backdrop" aria-hidden="true">
+  <div class="char-modal" role="dialog" aria-modal="true" aria-label="Character details">
+    <div class="char-modal-header">
+      <div>
+        <div class="char-modal-title" id="char-modal-title">Character</div>
+        <div class="char-modal-sub" id="char-modal-sub"></div>
+      </div>
+      <button class="char-modal-close" id="char-modal-close">Close</button>
+    </div>
+
+    <div class="char-modal-grid">
+      <img id="char-modal-portrait" class="char-modal-portrait" alt="Character portrait" />
+      <div>
+        <div class="char-kv" id="char-modal-kv"></div>
+        <div style="margin-top:12px;">
+          <div style="font-weight:700;">Attacks</div>
+          <ul class="attack-list" id="char-modal-attacks"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
   <script>
 // ===== Utility: Inline placeholder image (SVG data URL) =====
@@ -296,32 +384,6 @@ function setBar(idBase, cur, max) {
   const text = document.getElementById(idBase + '-text');
   fill.style.width = `${percent(cur, max)}%`;
   text.textContent = `${cur} / ${max}`;
-}
-
-/* =========================
-   Misc
-   ========================= */
-function chooseSearchResult() {
-  const msg =
-    "Until rolls are implemented:" +
-    "What was found?\n" +
-    "1) Monsters\n" +
-    "2) Nothing\n" +
-    "3) Loot\n\n" +
-    "Type 1, 2, or 3:";
-
-  const ans = prompt(msg, "1");
-
-  if (ans === null) return null; // user cancelled
-
-  const pick = String(ans).trim();
-
-  if (pick === "1") return "monsters";
-  if (pick === "2") return "nothing";
-  if (pick === "3") return "loot";
-
-  alert("Please type 1, 2, or 3.");
-  return chooseSearchResult(); // reprompt
 }
 
 
@@ -382,7 +444,7 @@ function renderMember(m) {
   const hpBar = makeBar(`hp-${m.id}`, '--hp', m.hp, m.hpMax, `${m.name} HP`);
   const mpBar = makeBar(`mp-${m.id}`, '--mp', m.mp, m.mpMax, `${m.name} MP`);
   return el('div', { class: 'member', id: `member-${m.id}`, dataset: { id: m.id } }, [
-	el('div', { class: 'avatar' }, el('img', { alt: `${m.name} portrait`, src: m.image || placeholderSVG(m.name, 200, 200) })),
+	el('div', { class: 'avatar' }, el('img', { alt: `${m.name} portrait`, src: m.image || placeholderSVG(m.name, 200, 200), onclick: () => openCharacterModal(m.id) })),
 	el('div', { class: 'member-main' }, [
 	  el('div', { class: 'member-top' }, [
 		el('div', { class: 'member-name' }, m.name),
@@ -422,7 +484,16 @@ function setStory(text) {
 function init() {
   Game.room_index = 0;
   Game.clue_count = 0;
-  renderParty(state.party); // TODO
+  // Character modal wiring (once)
+  document.getElementById('char-modal-close').onclick = closeCharacterModal;
+  document.getElementById('char-modal-backdrop').onclick = (e) => {
+    if (e.target.id === 'char-modal-backdrop') closeCharacterModal(); // click outside panel
+  };
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeCharacterModal();
+  });
+
+  renderParty(state.party);
   startGameFlow();
 }
 
@@ -431,19 +502,90 @@ window.GameUI = {
   setMonster, setMonsterHP, setActions, setParty, setHP, setMP, setStory
 };
 	
+function openCharacterModal(id) {
+  const ch = state.party?.find(p => p.id === id);
+  if (!ch) return;
+
+  const backdrop = document.getElementById('char-modal-backdrop');
+  const title = document.getElementById('char-modal-title');
+  const sub = document.getElementById('char-modal-sub');
+  const portrait = document.getElementById('char-modal-portrait');
+  const kv = document.getElementById('char-modal-kv');
+  const attacksEl = document.getElementById('char-modal-attacks');
+
+  title.textContent = ch.name;
+  sub.textContent = `${ch.role || ''}  •  Level ${ch.lvl ?? 1}`;
+
+  portrait.src = ch.image || placeholderSVG(ch.name, 220, 220);
+  portrait.alt = `${ch.name} portrait`;
+
+  const rows = [
+    ['HP', `${ch.hp}/${ch.hpMax}`],
+    ['MP', `${ch.mp}/${ch.mpMax}`],
+    ['Weapon', String(ch.weapon ?? 0)],
+    ['Armor', String(ch.armor ?? 0)],
+    ['Guarded', ch.guarded ? 'Yes' : 'No'],
+    ['Note', ch.note || '']
+  ];
+
+  kv.innerHTML = rows.map(([k,v]) =>
+    `<div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div>`
+  ).join('');
+
+  const attacks = ch.attacks || [];
+  attacksEl.innerHTML = attacks.map(a => {
+    const dmg = (a.dmg === "*" ? "special" : a.dmg);
+    const anytime = a.anytime ? " • anytime" : "";
+    return `
+      <li>
+        <div><b>${escapeHtml(a.name)}</b></div>
+        <div class="attack-meta">mp_cost: ${escapeHtml(String(a.mp_cost ?? 0))} • dmg: ${escapeHtml(String(dmg))}${anytime}</div>
+      </li>
+    `;
+  }).join('');
+
+  backdrop.style.display = 'flex';
+  backdrop.setAttribute('aria-hidden', 'false');
+}
+
+function closeCharacterModal() {
+  const backdrop = document.getElementById('char-modal-backdrop');
+  backdrop.style.display = 'none';
+  backdrop.setAttribute('aria-hidden', 'true');
+}
+
+// Tiny HTML escaper so notes/strings can't break your modal markup
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
 
 /* =========================
    Game Data
    ========================= */
 const state = {
-  monster: {}, // Hooked up, don't set here 
-  party: [ // Not hooked up yet
-	{ id: "p1", name: "Cyra",  role: "Rogue",   hp: 4, hpMax: 4, mp: 0,  mpMax: 1,  image: "images/Cyra.png" },
-	{ id: "p2", name: "Brann", role: "Warrior", hp: 7, hpMax: 7, mp: 0,  mpMax: 1,  image: "images/Brann.png" },
-	{ id: "p3", name: "Aeris", role: "Wizard",  hp: 3, hpMax: 3, mp: 10, mpMax: 10, image: "images/Aeris.png" },
-	{ id: "p4", name: "Dru",   role: "Cleric",  hp: 5, hpMax: 5, mp: 8,  mpMax: 8,  image: "images/Dru.png" },
+  monster: {}, // Set by the room entrance state.
+  party: [
+	{ id: "p1", name: "Cyra",  role: "Rogue",   hp: 4, hpMax: 4, mp: 1,  mpMax: 1,  image: "images/Cyra.png",
+      lvl: 1, weapon: 0, armor: 0, note: "Adds lvl to defense roles",
+      attacks: [{name: "Strike", mp_cost: 0, dmg: 1}, {name: "Back Stab (1mp)", mp_cost: 1, dmg: 2}, ],
+     guarded: false },
+	{ id: "p2", name: "Brann", role: "Warrior", hp: 7, hpMax: 7, mp: 1,  mpMax: 1,  image: "images/Brann.png",
+      lvl: 1, weapon: 1, armor: 1, note: "Adds lvl to attack roles",
+      attacks: [{name: "Strike", mp_cost: 0, dmg: 1}, {name: "Power Attack (1mp)", mp_cost: 1, dmg: 2}, ],
+     guarded: false },
+	{ id: "p3", name: "Aeris", role: "Wizard",  hp: 3, hpMax: 3, mp: 4, mpMax: 4, image: "images/Aeris.png",
+      lvl: 1, weapon: 0, armor: 0, note: "Adds lvl to magic rolls",
+      attacks: [{name: "Strike", mp_cost: 0, dmg: 1}, {name: "Magic Missile (1mp)", mp_cost: 1, dmg: 1}, {name: "Fireball (2mp)", mp_cost: 2, dmg: 2}, ],
+     guarded: false },
+	{ id: "p4", name: "Dru",   role: "Cleric",  hp: 5, hpMax: 5, mp: 3,  mpMax: 3,  image: "images/Dru.png",
+      lvl: 1, weapon: 0, armor: 1, note: "Adds lvl/2 to attack rolls",
+      attacks: [{name: "Strike", mp_cost: 0, dmg: 1}, {name: "Heal (1mp)", mp_cost: 1, dmg: "*", anytime: true} ],
+     guarded: false },
   ],
-  actions: [], // Hooked up, set from elsewhere
+  actions: [], // Set by the current state
 };
 
 const Rooms = [ // These are rooms  
@@ -456,48 +598,43 @@ const Rooms = [ // These are rooms
   { name: "Lockers", // 1
 	image: "images/Lockers.png",
     power: -1,
-	monster_present : true,
-  },
-  { name: "Spooky Classroom", // 2
+	monster_present :
+                  { name: "Locker Ghouls", // 1
+                  image: 'images/LockersGhouls.png',
+                  power: 3,
+                  hp: 2,
+                  hpMax: 2,
+                  },},
+  { name: "Haunted Classroom",
 	image: "images/Classroom2.png",
     power: -1,
-	monster_present : true,
+	monster_present :   { name: "Paper Cut Swarm",
+	image: 'images/PaperCutSwarm.png',
+	power: 4,
+	hp: 3,
+	hpMax: 3,
   },
-  { name: "Haunted Classroom", // 3
-	image: "images/Classroom2.png",
+  },
+  { name: "Cursed Chalkboard",
+	image: "images/Classroom1.png",
     power: -1,
-	monster_present : true,
+	monster_present :
+  { name: "Demon Teacher",
+	image: 'images/DemonTeacher.png',
+	power: 5,
+	hp: 4,
+	hpMax: 4,
   },
-  { name: "Dean Diablo's Office", // 4
+  },
+  { name: "Dean Diablo's Office",
 	image: "images/DeansOffice.png",
     power: -1,
-	monster_present : true,
-  },
-]
-const Beastiary = [ // Kept in sync with Rooms - 1
-  { name: "Locker Ghouls", // 1
-	image: 'images/LockersGhouls.png',
-	power: 3,
-	hp: 2,
-	hpMax: 2,
-  },
-  { name: "Demon Teacher", // 2
-	image: 'images/DemonTeacher.png',
-	power: 3,
-	hp: 2,
-	hpMax: 2,
-  },
-  { name: "Paper Cut Swarm", // 3
-	image: 'images/PaperCutSwarm.png',
-	power: 3,
-	hp: 2,
-	hpMax: 2,
-  },
-  { name: "Dean Diablo", // 4
+	monster_present :   { name: "Dean Diablo",
 	image: 'images/DeanDiablo.png',
-	power: 3,
-	hp: 2,
-	hpMax: 2,
+	power: 6,
+	hp: 5,
+	hpMax: 5,
+  },
   },
 ]
 	
@@ -540,6 +677,43 @@ function applyCounters(delta = {}, setAbs = {}) {
   if (Game.clue_count > 3) { alert("Solved a Mystery!"); Game.clue_count = 0; }
 }
 
+// ===== Dice helper (easy to tweak globally later) =====
+function rollD6() {
+  return 1 + Math.floor(Math.random() * 6);
+}
+
+// ===== Party helpers =====
+function livingPartyMembers() {
+  return (state.party || []).filter(p => (p.hp || 0) > 0);
+}
+
+function allPartyDead() {
+  return livingPartyMembers().length === 0;
+}
+
+function nextLivingIndex(startIdx) {
+  const n = state.party?.length || 0;
+  if (!n) return -1;
+  for (let i = 0; i < n; i++) {
+    const idx = (startIdx + i) % n;
+    if ((state.party[idx].hp || 0) > 0) return idx;
+  }
+  return -1;
+}
+
+// Config: how many living targets the monster will try to hit each turn
+const MONSTER_TARGETS = 2;
+
+function getMonster() {
+  // Your monster is stored in state.monster and has power/hp/hpMax
+  return state.monster;
+}
+
+function logLines(lines) {
+  // setStory appends, so just emit multiple lines cleanly
+  for (const line of lines) setStory(line);
+}
+
 function makeAction(label, effect) {
   return {
     id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -554,7 +728,7 @@ function makeAction(label, effect) {
 function refreshMonsterPanelForCurrentState() {
   // States where you want to show an actual monster
   if ([State.MONSTER_APPEARS, State.PLAYER_TURN, State.MONSTER_TURN].includes(Game.state)) {
-    if (Game.room_index > 0) GameUI.setMonster(Beastiary[Game.room_index - 1]);
+    if (Game.room_index > 0) GameUI.setMonster(Rooms[Game.room_index].monster_present);
     return;
   }
   // Otherwise show the room
@@ -569,6 +743,27 @@ function go(nextState) {
 
   // Force UI sync even if an enter handler forgets to set the monster/room
   refreshMonsterPanelForCurrentState();
+}
+
+function chooseSearchResult() {
+  const msg =
+    "Until rolls are implemented:" +
+    "What was found?\n" +
+    "1) Nothing\n" +
+    "2) Loot\n\n" +
+    "Type 1 or 2:";
+
+  const ans = prompt(msg, "1");
+
+  if (ans === null) return null; // user cancelled
+
+  const pick = String(ans).trim();
+
+  if (pick === "1") return "nothing";
+  if (pick === "2") return "loot";
+
+  alert("Please type 1, or 2.");
+  return chooseSearchResult(); // reprompt
 }
 
 function doSearchAction()
@@ -586,21 +781,35 @@ function doSearchAction()
     return;
   }
 
-  if (result === "monsters") {
-    if (Game.room_index === 0) {
-      setStory("You search, but this place is too quiet... no monsters here.");
-      go(State.ROOM);
-      return;
-    }
-    GameUI.setMonster(Beastiary[Game.room_index - 1]);
-    go(State.MONSTER_TURN);
-    return;
-  }
-
   // nothing
   setStory("You find nothing.");
   go(State.ROOM);
 }
+
+function choosePartyTarget(promptTitle = "Choose a target") {
+  const party = state.party || [];
+  if (!party.length) return null;
+
+  const lines = party.map((p, i) =>
+    `${i + 1}) ${p.name} (${p.role}) HP:${p.hp}/${p.hpMax}`
+  );
+
+  const ans = prompt(
+    `${promptTitle}\n\n${lines.join("\n")}\n\nType 1-${party.length}:`,
+    "1"
+  );
+
+  if (ans === null) return null; // user cancelled
+
+  const n = parseInt(String(ans).trim(), 10);
+  if (!Number.isFinite(n) || n < 1 || n > party.length) {
+    alert(`Please enter a number from 1 to ${party.length}.`);
+    return choosePartyTarget(promptTitle);
+  }
+
+  return party[n - 1];
+}
+
 
 // 4) Enter-state hooks: add buttons and leave TODO comments for future logic
 const EnterHandlers = {
@@ -612,19 +821,17 @@ const EnterHandlers = {
     if (!Rooms[Game.room_index].searched) { actions.push(makeAction("Search", doSearchAction)); }
     if (Game.room_index + 1 < Rooms.length) { actions.push(makeAction("Next Room", () => { applyCounters({ room_index: +1 }); go(State.ROOM_ENTRY); })); }
     if (Game.room_index > 0) { actions.push(makeAction("Retreat", () => { applyCounters({ room_index: -1 }); go(State.ROOM_ENTRY); })); }
-
-    console.log(actions);
-    console.log(actions.length);
 	
     setActions(actions);
   },
 
   // Room Entry events
   [State.ROOM_ENTRY]: function ROOM_ENTRY() {
-	if (Rooms[Game.room_index].monster_present)
+  Game.active_character = 0;
+	if (Rooms[Game.room_index].monster_present !== false)
 	{
 		setStory("The party encounters a monster.");
-		GameUI.setMonster(Beastiary[Game.room_index-1]);
+		GameUI.setMonster(Rooms[Game.room_index].monster_present);
 		go(State.PLAYER_TURN);
 	}
 	else
@@ -635,26 +842,217 @@ const EnterHandlers = {
 	}
   },
 
-  [State.PLAYER_TURN]: function enter_PLAYER_TURN() {
-    // TODO: setStory("The party's turn."); enable combat UI, target selection, etc.
-    setActions([
-      makeAction("Retreat",      () => { setStory("The party retreats to the last room."); applyCounters({ room_index: -1 }); go(State.ROOM_ENTRY); }),
-      makeAction("Fight Poorly", () => { setStory("The party didn't kill the monster..."); GameUI.setMonsterHP(1); go(State.MONSTER_TURN); }),
-      makeAction("Fight Well",   () => { setStory("The party slough the monster."); GameUI.setMonsterHP(0); go(State.VICTORY); }),
-    ]);
-  },
+[State.PLAYER_TURN]: function enter_PLAYER_TURN() {
+  if (allPartyDead()) { go(State.DEFEAT); return; }
 
-  [State.MONSTER_TURN]: function enter_MONSTER_TURN() {
-    setStory("The monster attacks.");
-    setActions([
-      makeAction("Defend Well",    () => { setStory("The party takes no damage."); go(State.PLAYER_TURN); }),
-      makeAction("Defend Poorly",  () => { setStory("The party takes heavy damage (TODO).");go(State.DEFEAT); }),
+  const mon = getMonster();
+  if (!mon || !mon.power || mon.power <= 0) {
+    setStory("No monster is present.");
+    go(State.ROOM);
+    return;
+  }
+
+  // Determine who is acting
+  if (typeof Game.active_character !== "number") Game.active_character = 0;
+  const idx = nextLivingIndex(Game.active_character);
+  if (idx < 0) { go(State.DEFEAT); return; }
+
+  Game.active_character = idx;
+  const ch = state.party[idx];
+
+  setStory(`Player turn: ${ch.name} (${ch.role})`);
+
+  function endThisCharacterTurn() {
+    // advance to next living member; if none left in this round => monster turn
+    const nextIdx = nextLivingIndex(idx + 1);
+    if (nextIdx < 0 || nextIdx <= idx) {
+      // wrapped around (or none), round is over
+      Game.active_character = 0;
+      go(State.MONSTER_TURN);
+    } else {
+      Game.active_character = nextIdx;
+      go(State.PLAYER_TURN);
+    }
+  }
+
+  function spendMP(amount) {
+    ch.mp = Math.max(0, (ch.mp || 0) - amount);
+    GameUI.setMP(ch.id, ch.mp, ch.mpMax);
+  }
+
+  function dealDamageToMonster(dmg) {
+    mon.hp = Math.max(0, (mon.hp || 0) - dmg);
+    GameUI.setMonsterHP(mon.hp, mon.hpMax);
+  }
+
+  function doAttack(atk) {
+  // Any non-guard action removes guarded state from that character
+  ch.guarded = false;
+
+  // ===== HEAL SPECIAL CASE =====
+  if (atk.name === "Heal" || atk.dmg === "*") {
+    const target = choosePartyTarget(`${ch.name} casts Heal. Who do you heal?`);
+    if (!target) {
+      setStory("Heal cancelled.");
+      // Important: don't spend MP or advance turn if user cancels
+      return;
+    }
+
+    const roll = rollD6();
+    const bonus = (ch.lvl || 0);
+    const amount = roll + bonus;
+
+    // spend MP
+    spendMP(atk.mp_cost || 0);
+
+    const before = target.hp || 0;
+    target.hp = Math.min(target.hpMax || 0, before + amount);
+    GameUI.setHP(target.id, target.hp, target.hpMax);
+
+    logLines([
+      `${ch.name} uses Heal on ${target.name}.`,
+      `Heal roll: ${roll} + lvl:${bonus} = ${amount}`,
+      `${target.name} HP: ${before}/${target.hpMax} → ${target.hp}/${target.hpMax}`
     ]);
-  },
+
+    endThisCharacterTurn();
+    return;
+  }
+
+    const roll = rollD6();
+    let total = roll;
+
+    const isStrike = atk.name === "Strike";
+    if (isStrike) {
+      total += (ch.weapon || 0);
+      if (ch.role === "Warrior") total += (ch.lvl || 0);
+      if (ch.role === "Cleric") total += Math.floor((ch.lvl || 0) / 2);
+    } else {
+      total += (ch.lvl || 0);
+    }
+
+    spendMP(atk.mp_cost || 0);
+
+    logLines([
+      `${ch.name} uses ${atk.name} on ${mon.name}.`,
+      `Attack roll: ${roll}` +
+        (isStrike ? ` + weapon:${ch.weapon || 0}` : ` + lvl:${ch.lvl || 0}`) +
+        (ch.role === "Warrior" && isStrike ? ` + warrior_lvl:${ch.lvl || 0}` : ``) +
+        (ch.role === "Cleric" && isStrike ? ` + cleric_half_lvl:${Math.floor((ch.lvl || 0) / 2)}` : ``) +
+        ` = ${total} vs monster_power:${mon.power}`
+    ]);
+
+    if (total >= mon.power) {
+      const dmg = Number(atk.dmg);
+      dealDamageToMonster(dmg);
+      logLines([`${mon.name} takes ${dmg} damage.`]);
+      if (mon.hp <= 0) {
+        setStory(`${mon.name} is defeated!`);
+        go(State.VICTORY);
+        return;
+      }
+    } else {
+      logLines([`Miss! ${mon.name} takes no damage.`]);
+    }
+
+    endThisCharacterTurn();
+  }
+
+  // Build action buttons for THIS character
+  const actions = [];
+
+  // Retreat only for the first character in the list (index 0), TODO: what if rogue dies?
+  if (idx === 0) {
+    actions.push(makeAction("Retreat", () => {
+      setStory("You retreat to the last room.");
+      applyCounters({ room_index: -1 });
+      // Clear guarding when leaving combat (optional but sane)
+      for (const p of state.party) p.guarded = false;
+      Game.active_character = 0;
+      go(State.ROOM_ENTRY);
+    }));
+  }
+
+  // Guard action for everyone
+  actions.push(makeAction("Guard", () => {
+    ch.guarded = true;
+    logLines([
+      `${ch.name} guards.`,
+      `Guard effect: +1 defense until ${ch.name} takes another action.`
+    ]);
+    endThisCharacterTurn();
+  }));
+
+  // Attack actions (only if mp is sufficient)
+  for (const atk of (ch.attacks || [])) {
+    const cost = atk.mp_cost || 0;
+    if ((ch.mp || 0) >= cost) {
+      actions.push(makeAction(atk.name, () => doAttack(atk)));
+    }
+  }
+
+  setActions(actions);
+},
+
+[State.MONSTER_TURN]: function enter_MONSTER_TURN() {
+  setActions([]); // no buttons during monster resolution
+
+  const mon = getMonster();
+  if (!mon || !mon.power || mon.power <= 0) {
+    setStory("No monster is present.");
+    go(State.ROOM);
+    return;
+  }
+
+  setStory("--- The Monster Acts ---");
+
+  // Monster attacks first N living party members in party order
+  let attacked = 0;
+
+  for (let i = 0; i < state.party.length && attacked < MONSTER_TARGETS; i++) {
+    const ch = state.party[i];
+    if (!ch || ch.hp <= 0) continue;
+
+    attacked++;
+
+    const roll = rollD6();
+    const armor = ch.armor || 0;
+    const rogueBonus = (ch.role === "Rogue") ? (ch.lvl || 0) : 0;
+    const guardedBonus = ch.guarded ? 1 : 0;
+    const total = roll + armor + rogueBonus + guardedBonus;
+
+    logLines([
+      `The ${mon.name} attacks ${ch.name}.`,
+      `Defense roll: ${roll} + armor:${armor}` +
+        (rogueBonus ? ` + rogue_lvl:${rogueBonus}` : ``) +
+        (guardedBonus ? ` + guarded:${guardedBonus}` : ``) +
+        ` = ${total} vs monster_power:${mon.power}`
+    ]);
+
+    if (total <= mon.power) {
+      ch.hp -= 1;
+      GameUI.setHP(ch.id, ch.hp, ch.hpMax);
+      logLines([`${ch.name} loses 1 HP.`]);
+    } else {
+      logLines([`${ch.name} loses no HP.`]);
+    }
+  }
+
+  if (allPartyDead()) {
+    go(State.DEFEAT);
+    return;
+  }
+
+  // After monster finishes, player's turn starts at first character again
+  setStory("--- The Party Acts ---");
+  Game.active_character = 0;
+  go(State.PLAYER_TURN);
+},
+
 
   [State.VICTORY]: function enter_VICTORY() {
-	GameUI.setMonster(Rooms[Game.room_index]);
-	Rooms[Game.room_index].monster_present = false;
+    GameUI.setMonster(Rooms[Game.room_index]);
+    Rooms[Game.room_index].monster_present = false;
     setStory("There's treasure here.");
     setActions([
       makeAction("Take Loot", () => { setStory("You got some loot."); go(State.ROOM); }),
@@ -664,7 +1062,7 @@ const EnterHandlers = {
   [State.DEFEAT]: function enter_DEFEAT() {
     setStory("The party was defeated.");
     setActions([
-      makeAction("Start Over", () => { init(); }),
+      makeAction("Start Over", () => { location.reload(); }),
     ]);
   },
 };
