@@ -327,6 +327,10 @@
           <div style="font-weight:700;">Attacks</div>
           <ul class="attack-list" id="char-modal-attacks"></ul>
         </div>
+        <div style="margin-top:12px;">
+          <div style="font-weight:700;">Combat Bonuses</div>
+          <ul class="attack-list" id="char-modal-derived"></ul>
+        </div>
       </div>
     </div>
   </div>
@@ -544,6 +548,15 @@ function openCharacterModal(id) {
     `;
   }).join('');
 
+  const derivedEl = document.getElementById('char-modal-derived');
+  const derived = computeDerivedCombatInfo(ch);
+    derivedEl.innerHTML = derived.map(d =>
+    `<li>
+      <div><b>${escapeHtml(d.title)}</b></div>
+      <div class="attack-meta">${escapeHtml(d.text)}</div>
+    </li>`
+  ).join('');
+
   backdrop.style.display = 'flex';
   backdrop.setAttribute('aria-hidden', 'false');
 }
@@ -561,6 +574,41 @@ function escapeHtml(s) {
   }[c]));
 }
 
+function computeDerivedCombatInfo(ch) {
+  const lvl = ch.lvl || 0;
+  const weapon = ch.weapon || 0;
+  const armor = ch.armor || 0;
+
+  const info = [];
+
+  // Defense
+  let defenseNotes = [`armor ${armor}`];
+  if (ch.role === "Rogue") defenseNotes.push(`rogue lvl (${lvl})`);
+  defenseNotes.push(`guarded (1 if active)`);
+  info.push({
+    title: "Defense Roll",
+    text: `d6 + ${defenseNotes.join(" + ")}`
+  });
+
+  // Strike
+  let strikeNotes = [`weapon ${weapon}`];
+  if (ch.role === "Warrior") strikeNotes.push(`warrior lvl (${lvl})`);
+  if (ch.role === "Cleric") strikeNotes.push(`cleric half-lvl (${Math.floor(lvl / 2)})`);
+  info.push({
+    title: "Basic Strike Attack",
+    text: `d6 + ${strikeNotes.join(" + ")}`
+  });
+
+  // Healing (if applicable)
+  if (ch.attacks?.some(a => a.name === "Heal" || a.dmg === "*")) {
+    info.push({
+      title: "Heal",
+      text: `d6 + lvl (${lvl}) HP restored`
+    });
+  }
+
+  return info;
+}
 
 /* =========================
    Game Data
@@ -745,47 +793,6 @@ function go(nextState) {
   refreshMonsterPanelForCurrentState();
 }
 
-function chooseSearchResult() {
-  const msg =
-    "Until rolls are implemented:" +
-    "What was found?\n" +
-    "1) Nothing\n" +
-    "2) Loot\n\n" +
-    "Type 1 or 2:";
-
-  const ans = prompt(msg, "1");
-
-  if (ans === null) return null; // user cancelled
-
-  const pick = String(ans).trim();
-
-  if (pick === "1") return "nothing";
-  if (pick === "2") return "loot";
-
-  alert("Please type 1, or 2.");
-  return chooseSearchResult(); // reprompt
-}
-
-function doSearchAction()
-{
-  const result = chooseSearchResult();
-  if (result === null) return; // cancelled: do nothing
-  
-  Rooms[Game.room_index].searched = true;
-
-  if (result === "loot") {
-    setStory("There's treasure here.");
-    setActions([
-      makeAction("Take Loot", () => { setStory("You got some loot."); go(State.ROOM); }),
-    ]);
-    return;
-  }
-
-  // nothing
-  setStory("You find nothing.");
-  go(State.ROOM);
-}
-
 function choosePartyTarget(promptTitle = "Choose a target") {
   const party = state.party || [];
   if (!party.length) return null;
@@ -810,15 +817,117 @@ function choosePartyTarget(promptTitle = "Choose a target") {
   return party[n - 1];
 }
 
+function doLoot() {
+  const roll = rollD6();
+
+  const hauntedSchoolJokes = [
+    "You found some crayons, the warrior eats them.",
+    "You found extra homework, but no-one volunteers to do it.",
+    "You find a suspiciously warm lunch tray… it screams when you touch it.",
+    "You open a locker. A ghostly note says: 'See me after death.'",
+    "You pick up a hall pass. It’s stamped: DETENTION: ETERNITY.",
+    "You discover a cursed bell schedule. Every period is 'Math'.",
+  ];
+
+  // Helper: apply stat changes + refresh UI
+  function applyToCharacter(ch, fnApply) {
+    fnApply(ch);
+    // refresh UI bars/stats (you already have these)
+    GameUI.setHP(ch.id, ch.hp, ch.hpMax);
+    GameUI.setMP(ch.id, ch.mp, ch.mpMax);
+    // Optional: if you display weapon/armor on the party tile, re-render party:
+    // renderParty(state.party);
+  }
+
+  // Outcomes
+  if (roll === 1) {
+    setStory("Loot found: **Health Potion** (+1 max HP, +1 current HP).");
+    const target = choosePartyTarget("Who drinks the Health Potion?");
+    if (!target) { setStory("You leave it behind."); return; }
+
+    const beforeMax = target.hpMax;
+    const beforeHP  = target.hp;
+
+    applyToCharacter(target, (ch) => {
+      ch.hpMax = (ch.hpMax || 0) + 1;
+      ch.hp = Math.min(ch.hpMax, (ch.hp || 0) + 1);
+    });
+
+    setStory(`${target.name} drinks it. HP ${beforeHP}/${beforeMax} → ${target.hp}/${target.hpMax}.`);
+    return;
+  }
+
+  if (roll === 2) {
+    setStory("Loot found: **Mana Potion** (+1 max MP, +1 current MP).");
+    const target = choosePartyTarget("Who drinks the Mana Potion?");
+    if (!target) { setStory("You leave it behind."); return; }
+
+    const beforeMax = target.mpMax;
+    const beforeMP  = target.mp;
+
+    applyToCharacter(target, (ch) => {
+      ch.mpMax = (ch.mpMax || 0) + 1;
+      ch.mp = Math.min(ch.mpMax, (ch.mp || 0) + 1);
+    });
+
+    setStory(`${target.name} drinks it. MP ${beforeMP}/${beforeMax} → ${target.mp}/${target.mpMax}.`);
+    return;
+  }
+
+  if (roll === 3) {
+    setStory("Loot found: **Weapon Upgrade** (+1 Weapon).");
+    const target = choosePartyTarget("Who gets the Weapon Upgrade?");
+    if (!target) { setStory("You leave it behind."); return; }
+
+    const before = target.weapon || 0;
+
+    applyToCharacter(target, (ch) => {
+      ch.weapon = (ch.weapon || 0) + 1;
+    });
+
+    setStory(`${target.name}'s Weapon ${before} → ${target.weapon}.`);
+    return;
+  }
+
+  if (roll === 4) {
+    setStory("Loot found: **Armor Upgrade** (+1 Armor).");
+    const target = choosePartyTarget("Who gets the Armor Upgrade?");
+    if (!target) { setStory("You leave it behind."); return; }
+
+    const before = target.armor || 0;
+
+    applyToCharacter(target, (ch) => {
+      ch.armor = (ch.armor || 0) + 1;
+    });
+
+    setStory(`${target.name}'s Armor ${before} → ${target.armor}.`);
+    return;
+  }
+
+  if (roll === 5) {
+    // Party gold is best stored on `state`, not inside the party array.
+    if (typeof state.gold !== "number") state.gold = 0;
+
+    const gain = rollD6();
+    state.gold += gain;
+
+    setStory(`You found **gold**! +${gain} gold (party gold: ${state.gold}).`);
+    return;
+  }
+
+  // roll === 6
+  setStory("Nothing of value…");
+  setStory(hauntedSchoolJokes[Math.floor(Math.random() * hauntedSchoolJokes.length)]);
+}
 
 // 4) Enter-state hooks: add buttons and leave TODO comments for future logic
 const EnterHandlers = {
   [State.ROOM]: function enter_ROOM() {
-    setStory(Rooms[Game.room_index].name + " (room#"+Game.room_index+")");
+    setStory("Now in " + Rooms[Game.room_index].name + " (room#"+Game.room_index+")");
 	
     let actions = []
     
-    if (!Rooms[Game.room_index].searched) { actions.push(makeAction("Search", doSearchAction)); }
+    if (!Rooms[Game.room_index].searched) { actions.push(makeAction("Search", () => { setStory("You search the room finding: "); Rooms[Game.room_index].searched = true; doLoot(); go(State.ROOM); } )); }
     if (Game.room_index + 1 < Rooms.length) { actions.push(makeAction("Next Room", () => { applyCounters({ room_index: +1 }); go(State.ROOM_ENTRY); })); }
     if (Game.room_index > 0) { actions.push(makeAction("Retreat", () => { applyCounters({ room_index: -1 }); go(State.ROOM_ENTRY); })); }
 	
@@ -1055,7 +1164,7 @@ const EnterHandlers = {
     Rooms[Game.room_index].monster_present = false;
     setStory("There's treasure here.");
     setActions([
-      makeAction("Take Loot", () => { setStory("You got some loot."); go(State.ROOM); }),
+      makeAction("Take Loot", () => { doLoot(); go(State.ROOM); }),
     ]);
   },
 
