@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RPG Battle Mockup</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page">
+    <main class="column">
+
+      <!-- Monster Panel -->
+      <section class="card monster" id="monster-panel">
+        <img id="monster-img" class="monster-img" alt="Monster" />
+        <div class="monster-overlay">
+          <div class="monster-meta">
+            <div class="monster-name" id="monster-name">??</div>
+          </div>
+          <div class="monster-stats" id="monster-stats">
+			<div class="badge" id="monster-power">Power: 0</div>
+            <div class="row">
+              <span class="label">HP</span>
+              <div class="bar" aria-label="Monster HP">
+                <div class="bar-fill" id="monster-hp-fill" style="background: var(--hp); width: 50%"></div>
+                <div class="bar-text" id="monster-hp-fill-text">0 / 0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Party Panel -->
+      <section class="card party" id="party">
+        <!-- Party members injected by JS -->
+      </section>
+
+      <!-- Story / Situation Text -->
+      <section class="card story" id="story">
+        The party stands before the old haunted school house. The air hums with dread...and learning potential!<br>
+      </section>
+
+      <!-- Primary Actions -->
+      <section class="card actions" id="actions">
+        <!-- Buttons injected by JS for easy reconfiguration -->
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Character modal -->
+<div id="char-modal-backdrop" class="char-modal-backdrop" aria-hidden="true">
+  <div class="char-modal" role="dialog" aria-modal="true" aria-label="Character details">
+    <div class="char-modal-header">
+      <div>
+        <div class="char-modal-title" id="char-modal-title">Character</div>
+        <div class="char-modal-sub" id="char-modal-sub"></div>
+      </div>
+      <button class="char-modal-close" id="char-modal-close">Close</button>
+    </div>
+
+    <div class="char-modal-grid">
+      <img id="char-modal-portrait" class="char-modal-portrait" alt="Character portrait" />
+      <div>
+        <div class="char-kv" id="char-modal-kv"></div>
+        <div style="margin-top:12px;">
+          <div style="font-weight:700;">Attacks</div>
+          <ul class="attack-list" id="char-modal-attacks"></ul>
+        </div>
+        <div style="margin-top:12px;">
+          <div style="font-weight:700;">Combat Bonuses</div>
+          <ul class="attack-list" id="char-modal-derived"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <script src="js/ui.js"></script>
+
+  <!-- Data (swap these to swap party/rooms) -->
+  <script src="js/data/party.js"></script>
+  <script src="js/data/rooms.js"></script>
+  <script src="js/state.js"></script>
+
+  <!-- Game logic -->
+  <script src="js/stateMachine.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- Tests -->
+  <script src="js/tests/smokeTests.js"></script>
+</body>
+</html>
