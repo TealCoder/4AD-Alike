@@ -36,19 +36,25 @@ function showMonsterStats() {
 function makeBar(id, colorCSSVar, current, max, aria) {
   const wrap = el('div', { class: 'bar', role: 'progressbar', 'aria-label': aria, 'aria-valuemin': 0, 'aria-valuemax': max, 'aria-valuenow': current });
   const fill = el('div', { class: 'bar-fill', id, style: { background: `var(${colorCSSVar})`, width: `${percent(current, max)}%` } });
-  const text = el('div', { class: 'bar-text', id: id + '-text' }, `${current} / ${max}`);
+  const text = el('div', { class: 'bar-text', id: id + '-text' }, formatBarText(id, current, max));
   wrap.append(fill, text);
   return wrap;
 }
 
 function percent(cur, max) { return Math.max(0, Math.min(100, max > 0 ? (cur / max) * 100 : 0)); }
 
+function formatBarText(idBase, cur, max) {
+  if (idBase.startsWith('hp-') || idBase === 'monster-hp-fill') return `HP ${cur}/${max}`;
+  if (idBase.startsWith('mp-')) return `MP ${cur}/${max}`;
+  return `${cur}/${max}`;
+}
+
 function setBar(idBase, cur, max) {
   console.log(`setBar ${idBase} ${cur} / ${max}`);
   const fill = document.getElementById(idBase);
   const text = document.getElementById(idBase + '-text');
   fill.style.width = `${percent(cur, max)}%`;
-  text.textContent = `${cur} / ${max}`;
+  text.textContent = formatBarText(idBase, cur, max);
 }
 
 
@@ -128,8 +134,8 @@ function renderMember(m) {
 		el('div', { class: 'member-name' }, m.name),
 		el('div', { class: 'member-meta' }, m.role || '')
 	  ]),
-	  el('div', { class: 'row' }, [ el('span', { class: 'label' }, 'HP'), hpBar ]),
-	  el('div', { class: 'row' }, [ el('span', { class: 'label' }, 'MP'), mpBar ]),
+	  el('div', { class: 'row' }, [ hpBar ]),
+	  el('div', { class: 'row' }, [ mpBar ]),
 	])
   ]);
 }

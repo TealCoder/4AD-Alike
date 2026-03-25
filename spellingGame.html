@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spelling Game Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    /* Full-screen overlay */
+    #quiz-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    /* Centered popup */
+    .quiz-modal {
+      background: #fff;
+      padding: 16px 20px;
+      border-radius: 8px;
+      max-width: 800px;
+      width: 90%;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .quiz-modal h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    .question {
+      width: 30%;
+    }
+
+    .user-answer input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .correct-answer {
+      font-family: monospace;
+    }
+
+    .mistake {
+      color: red;
+      font-weight: bold;
+    }
+
+    .quiz-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .total-mistakes {
+      font-weight: bold;
+    }
+
+    button {
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Spelling Game Test Page</h1>
+<p>This page will keep prompting you for how many questions you want, and then show a quiz popup.</p>
+
+<script>
+  // A small dictionary of crossword-style clues and answers
+  const QUESTIONS = [
+{ answer: "ai", clue: "whom, who, anyone" },
+{ answer: "an", clue: "An (proper name)" },
+{ answer: "anh", clue: "English, the United Kingdom, England" },
+{ answer: "anh trai", clue: "older brother, elder brother" },
+{ answer: "anh ấy", clue: "he, him" },
+{ answer: "ba", clue: "third, father, dad" },
+{ answer: "bao", clue: "bag" },
+{ answer: "bay", clue: "flies, blown, fly" },
+{ answer: "biết", clue: "knows, know, knowing" },
+{ answer: "buồn", clue: "are sad, sorry, was sad" },
+{ answer: "buổi", clue: "the, session" },
+{ answer: "buổi sáng", clue: "morning" },
+{ answer: "buổi tối", clue: "evening, night" },
+{ answer: "bà", clue: "grandmother" },
+{ answer: "bàn", clue: "the table, table, the desk" },
+{ answer: "bác sĩ", clue: "doctor" },
+{ answer: "bán", clue: "sell, sells" },
+{ answer: "bánh", clue: "cake, cookie, pie" },
+{ answer: "bánh mì", clue: "bread" },
+{ answer: "báo", clue: "newspaper, journal, paper" },
+{ answer: "bát", clue: "bowl" },
+{ answer: "bây giờ", clue: "now, moment, it" },
+{ answer: "bé gái", clue: "girl" },
+{ answer: "bình thường", clue: "normal, usual" },
+{ answer: "bò", clue: "ox, cow, bull" },
+{ answer: "bơi", clue: "swim, swims, swimming" },
+{ answer: "bướng bỉnh", clue: "stubborn" },
+{ answer: "bạn", clue: "friends, you, friendship" },
+{ answer: "bạn học", clue: "classmate" },
+{ answer: "bảo thủ", clue: "conservative" },
+{ answer: "bảo vệ", clue: "protect, protects" },
+{ answer: "bảy", clue: "seven" },
+{ answer: "bất cẩn", clue: "careless" },
+{ answer: "bất lịch sự", clue: "impolite" },
+{ answer: "bất lợi", clue: "disadvantage, disadvantageous" },
+{ answer: "bật", clue: "turn on, on" },
+{ answer: "bắc", clue: "north" },
+{ answer: "bắt đầu", clue: "begin, start, starts" },
+{ answer: "bằng", clue: "with, as, equals" },
+{ answer: "bọn họ", clue: "they" },
+{ answer: "bố", clue: "dad, father" },
+{ answer: "bố mẹ", clue: "parents" },
+{ answer: "bốn", clue: "four, 4" },
+{ answer: "bồ đào nha", clue: "Portugal" },
+{ answer: "bộ", clue: "(classifier for clothes), (classifier for sets), board" },
+{ answer: "bởi vì", clue: "because" },
+{ answer: "bữa", clue: "meals, meal" },
+{ answer: "ca", clue: "mug, shift" },
+{ answer: "ca sĩ", clue: "singer, singers" },
+{ answer: "cam", clue: "orange" },
+{ answer: "canh", clue: "soup" },
+{ answer: "chai", clue: "bottle, bottles" },
+{ answer: "chanh", clue: "lemon" },
+{ answer: "chay", clue: "vegetarian, vegan" },
+{ answer: "chia buồn", clue: "condole, condolence" },
+{ answer: "chia sẻ", clue: "share" },
+{ answer: "chim", clue: "bird" },
+{ answer: "chim sẻ", clue: "sparrow" },
+{ answer: "chiếc", clue: "the, ones" },
+{ answer: "chiếc váy", clue: "skirt" },
+{ answer: "chiếc áo", clue: "shirt" },
+{ answer: "chiều", clue: "afternoon" },
+{ answer: "cho", clue: "for, let, lets" },
+{ answer: "cho phép", clue: "allow, allows, let" },
+{ answer: "cho tôi hỏi", clue: "excuse me" },
+{ answer: "chuyên nghiệp", clue: "professional" },
+{ answer: "chuối", clue: "banana, bananas" },
+{ answer: "chuồn chuồn", clue: "dragonfly" },
+{ answer: "chuột", clue: "mouse" },
+{ answer: "chào", clue: "greet, hello, greets" },
+{ answer: "chào mừng", clue: "welcome" },
+{ answer: "chào tạm biệt", clue: "bye, goodbye" },
+{ answer: "châu", clue: "continent" },
+{ answer: "chín", clue: "nine, 9" },
+{ answer: "chó", clue: "dog" },
+{ answer: "chú", clue: "uncle, you" },
+{ answer: "chúc mừng", clue: "congratulate" },
+{ answer: "chúc ngủ ngon", clue: "good night" },
+{ answer: "chúng tôi", clue: "we, us" },
+{ answer: "chơi", clue: "play, plays, playing" },
+{ answer: "chạy", clue: "run, runs, running" },
+{ answer: "chất lượng", clue: "quality, qualities" },
+{ answer: "chậm", clue: "slow, slowly (when placed after verb), late" },
+{ answer: "chị", clue: "sister, older sister, older sisters" },
+{ answer: "chị gái", clue: "older sister" },
+{ answer: "chồng", clue: "husband, husbands" },
+{ answer: "chủ nhật", clue: "sunday" },
+{ answer: "con", clue: "little, kid, child" },
+{ answer: "con gái", clue: "daughter, girl" },
+{ answer: "con trai", clue: "son, boy" },
+{ answer: "cuối cùng", clue: "finally, last, final" },
+{ answer: "cuốn", clue: "classifier of documents and stories, the, roll" },
+{ answer: "cà chua", clue: "tomato, tomatoes" },
+{ answer: "cà phê", clue: "coffee" },
+{ answer: "cá", clue: "fish" },
+{ answer: "cá sấu", clue: "alligator" },
+{ answer: "các", clue: "(indicates plurality)" },
+{ answer: "cái", clue: "the, a, (classifier)" },
+{ answer: "câu", clue: "sentence" },
+{ answer: "câu hỏi", clue: "question" },
+{ answer: "câu trả lời", clue: "answer" },
+{ answer: "cây tre", clue: "bamboo" },
+{ answer: "có", clue: "is, there are, with" },
+{ answer: "cô gái", clue: "the girl, girl, girls" },
+{ answer: "cô ấy", clue: "she, her" },
+{ answer: "công nhân", clue: "worker, workers, a worker" },
+{ answer: "cùng", clue: "with, the same, together" },
+{ answer: "căn nhà", clue: "house" },
+{ answer: "cũ", clue: "are old, old, former" },
+{ answer: "cũng", clue: "too, also, as well" },
+{ answer: "cơm", clue: "rice" },
+{ answer: "cười", clue: "smile, smile/smiles, laugh/laughs" },
+{ answer: "cạnh tranh", clue: "compete, competing" },
+{ answer: "cả", clue: "all, both, all over" },
+{ answer: "cả tin", clue: "gullible, credulous" },
+{ answer: "cảm ơn", clue: "thanks, thank you" },
+{ answer: "cảnh sát", clue: "police, officers, officer" },
+{ answer: "cần", clue: "need, require/requires (verb), need/needs (verb)" },
+{ answer: "cần thiết", clue: "necessary" },
+{ answer: "cẩn thận", clue: "be careful, look out, carefully" },
+{ answer: "cậu bé", clue: "boy, The boy" },
+{ answer: "cắn", clue: "bite" },
+{ answer: "cố gắng", clue: "try, try (+ to infinitive), tries" },
+{ answer: "cộng hoà séc", clue: "Czech Republic" },
+{ answer: "cởi", clue: "take off" },
+{ answer: "của", clue: "de, 's, of" },
+{ answer: "cứ tự nhiên", clue: "help yourself" },
+{ answer: "cửa hàng", clue: "store" },
+{ answer: "cửa sổ", clue: "window, windows" },
+{ answer: "diễn", clue: "show, perform, action" },
+{ answer: "diễn viên", clue: "actor, actress" },
+{ answer: "diễn viên hài", clue: "comedian" },
+{ answer: "doanh nhân", clue: "businessman, entrepreneur, businesswoman" },
+{ answer: "dài", clue: "long" },
+{ answer: "dám", clue: "dare, dares" },
+{ answer: "dê", clue: "goat" },
+{ answer: "dì", clue: "aunt" },
+{ answer: "dùng", clue: "use, using, uses" },
+{ answer: "dũng cảm", clue: "brave, courageous" },
+{ answer: "dơ", clue: "dirty" },
+{ answer: "dơi", clue: "bat" },
+{ answer: "dạo này bạn thế nào", clue: "what's up, how are you doing" },
+{ answer: "dầu ăn", clue: "cooking oil" },
+{ answer: "dễ", clue: "easy" },
+{ answer: "dừng", clue: "stop, stops" },
+{ answer: "em", clue: "you, younger brother, younger sister" },
+{ answer: "em gái", clue: "younger sister" },
+{ answer: "em trai", clue: "younger brother" },
+{ answer: "ga", clue: "station, gas" },
+{ answer: "ghi âm", clue: "record, records" },
+{ answer: "ghét", clue: "hate, hates, hated" },
+{ answer: "ghế", clue: "chair" },
+{ answer: "gia đình", clue: "family" },
+{ answer: "giao tiếp", clue: "communicate, communicating" },
+{ answer: "giàu", clue: "rich" },
+{ answer: "giày", clue: "shoes, shoe, the shoes" },
+{ answer: "giáo viên", clue: "teacher" },
+{ answer: "giây", clue: "second, seconds" },
+{ answer: "giúp", clue: "help, helps" },
+{ answer: "giường", clue: "bed" },
+{ answer: "giấu", clue: "hide" },
+{ answer: "giờ", clue: "hour, hours, now" },
+{ answer: "giữ", clue: "keep" },
+{ answer: "gà", clue: "chicken" },
+{ answer: "gái", clue: "girl" },
+{ answer: "gì", clue: "what, what are, what is" },
+{ answer: "găng tay", clue: "glove" },
+{ answer: "gương", clue: "mirror, example" },
+{ answer: "gấu", clue: "bear" },
+{ answer: "gặp", clue: "encountered, dealing, meeting" },
+{ answer: "gặp lại sau", clue: "see you later" },
+{ answer: "gọi", clue: "orders, call, order (food)" },
+{ answer: "gửi", clue: "send, sends" },
+{ answer: "hai", clue: "two" },
+{ answer: "hay", clue: "well, in ... or, interesting" },
+{ answer: "hay là", clue: "or" },
+{ answer: "heo", clue: "pig" },
+{ answer: "hiểu", clue: "understand, understood, understands" },
+{ answer: "hiện tại", clue: "now, moment, currently" },
+{ answer: "hiện đại", clue: "modern" },
+{ answer: "hoàn hảo", clue: "perfect" },
+{ answer: "hoặc", clue: "or, either...or" },
+{ answer: "hy vọng", clue: "hope, hopes" },
+{ answer: "hài hước", clue: "humorous, funny" },
+{ answer: "hàn quốc", clue: "South Korea" },
+{ answer: "hát", clue: "sing, sings, singing" },
+{ answer: "hãy", clue: "let's, let, please" },
+{ answer: "hè", clue: "summer" },
+{ answer: "hôm nay", clue: "today" },
+{ answer: "hôn", clue: "kiss" },
+{ answer: "hôn nhân", clue: "marriage" },
+{ answer: "hơn", clue: "more, than, more than" },
+{ answer: "hướng", clue: "direction, heading" },
+{ answer: "hạnh phúc", clue: "happiness, happy" },
+{ answer: "hẹn gặp lại", clue: "see you later, see you again, see you" },
+{ answer: "họ", clue: "they, they are, they're" },
+{ answer: "họ hàng", clue: "relatives, relative" },
+{ answer: "học", clue: "school, take lessons, to learn" },
+{ answer: "học sinh", clue: "student" },
+{ answer: "hỏi", clue: "ask, asks" },
+{ answer: "hồng", clue: "pink" },
+{ answer: "hỗ trợ", clue: "support, supports, supporting" },
+{ answer: "hộ chiếu", clue: "passport" },
+{ answer: "hợp tác", clue: "cooperate" },
+{ answer: "khi", clue: "when, as, on" },
+{ answer: "khi nào", clue: "when, when does, when are" },
+{ answer: "khiêm tốn", clue: "humble, modest" },
+{ answer: "khoai tây chiên", clue: "chips, French fries" },
+{ answer: "khoác", clue: "coat, coats" },
+{ answer: "khoẻ", clue: "well, strong, fine" },
+{ answer: "khuyên", clue: "recommended, advises, advised" },
+{ answer: "khách sạn", clue: "hotel, hotels" },
+{ answer: "khó", clue: "hard, difficult" },
+{ answer: "khóc", clue: "crying, cries, cry/cries" },
+{ answer: "không", clue: "do not, no, weren't" },
+{ answer: "không có gì", clue: "you're welcome" },
+{ answer: "không phải", clue: "not, is not, are not" },
+{ answer: "không phải là", clue: "not, wasn't, am not" },
+{ answer: "khăn quàng", clue: "scarf, scarves" },
+{ answer: "khẳng định", clue: "affirm" },
+{ answer: "khỉ", clue: "monkey" },
+{ answer: "kia", clue: "that, those, other" },
+{ answer: "kiên nhẫn", clue: "patient" },
+{ answer: "kiến trúc sư", clue: "architect" },
+{ answer: "kế toán", clue: "accountant, accounting" },
+{ answer: "kỹ sư", clue: "engineer" },
+{ answer: "la bàn", clue: "compass" },
+{ answer: "linh hoạt", clue: "flexible" },
+{ answer: "luyện", clue: "practices, practice" },
+{ answer: "luyện tập", clue: "practice" },
+{ answer: "luật sư", clue: "lawyer" },
+{ answer: "ly", clue: "cup, cups, glass" },
+{ answer: "là", clue: "is, am, being" },
+{ answer: "làm", clue: "to be, has worked as, do on" },
+{ answer: "làm sao", clue: "how" },
+{ answer: "làm việc", clue: "work, working, works" },
+{ answer: "làm ơn", clue: "please" },
+{ answer: "lúc này", clue: "now, this moment, right now" },
+{ answer: "lăm", clue: "five (for 15 or higher), five" },
+{ answer: "lười biếng", clue: "lazy" },
+{ answer: "lượng mưa", clue: "precipitation, rainfall" },
+{ answer: "lạc quan", clue: "optimistic" },
+{ answer: "lấy", clue: "takes, take, get" },
+{ answer: "lần", clue: "time, times, turns" },
+{ answer: "lắng nghe", clue: "listen, listens, listening" },
+{ answer: "lặp lại", clue: "repeat, repeats" },
+{ answer: "lẻ", clue: "(used at hundred level)" },
+{ answer: "lịch", clue: "calendar" },
+{ answer: "lịch sự", clue: "polite" },
+{ answer: "lớn", clue: "large, big, great" },
+{ answer: "lợi thế", clue: "advantage, advantages" },
+{ answer: "mang", clue: "is, wears, carrying" },
+{ answer: "may mắn", clue: "lucky, luck" },
+{ answer: "mua", clue: "buy" },
+{ answer: "mua sắm", clue: "shop, shopping" },
+{ answer: "muối", clue: "salt, salty" },
+{ answer: "muốn", clue: "want" },
+{ answer: "muỗng", clue: "spoon" },
+{ answer: "mà còn", clue: "not only... but also, but also" },
+{ answer: "màu", clue: "color" },
+{ answer: "máy bay", clue: "airplane, plane" },
+{ answer: "máy tính", clue: "computer" },
+{ answer: "mây", clue: "cloud" },
+{ answer: "mèo", clue: "cat" },
+{ answer: "mì", clue: "noodles" },
+{ answer: "mì ý", clue: "pasta" },
+{ answer: "mì ăn liền", clue: "instant noodles" },
+{ answer: "mình", clue: "I'm, I, herself" },
+{ answer: "món", clue: "dish, kind, (indicates item of food)" },
+{ answer: "mùa", clue: "season, crop" },
+{ answer: "múa", clue: "dance, dances, dance/dances (verb)" },
+{ answer: "mũ", clue: "hat" },
+{ answer: "mươi", clue: "thirty" },
+{ answer: "mười", clue: "ten" },
+{ answer: "mẫu giáo", clue: "kindergarten" },
+{ answer: "mặc", clue: "wear, wears" },
+{ answer: "mẹ", clue: "mom" },
+{ answer: "mọi người", clue: "everybody, everyone, people" },
+{ answer: "mốt", clue: "one (for 21 or higher), vogue, one" },
+{ answer: "mỗi", clue: "each, per, every" },
+{ answer: "một", clue: "an, a, first" },
+{ answer: "mới", clue: "new" },
+{ answer: "mở", clue: "open, opens, turn on" },
+{ answer: "nam", clue: "south, male, Nam" },
+{ answer: "nam cực", clue: "antarctic" },
+{ answer: "nay", clue: "this, now" },
+{ answer: "nga", clue: "Russia" },
+{ answer: "nghe", clue: "listen, hear/hears, listens" },
+{ answer: "nghiêm túc", clue: "serious" },
+{ answer: "nghèo", clue: "poor" },
+{ answer: "nghìn", clue: "thousand, thousands, 1000" },
+{ answer: "nghĩ", clue: "think, thinks" },
+{ answer: "nghề nghiệp", clue: "profession, occupation" },
+{ answer: "nghệ sĩ", clue: "artist" },
+{ answer: "ngon", clue: "delicious, deliciously" },
+{ answer: "ngoài", clue: "out, besides, aside" },
+{ answer: "nguy hiểm", clue: "dangerous" },
+{ answer: "ngày", clue: "day, date, st" },
+{ answer: "ngày mai", clue: "tomorrow" },
+{ answer: "ngày sinh", clue: "birthday, date of birth" },
+{ answer: "ngân hàng", clue: "bank" },
+{ answer: "ngã", clue: "fall" },
+{ answer: "ngôi trường", clue: "school" },
+{ answer: "ngôn ngữ", clue: "language" },
+{ answer: "ngư dân", clue: "fisherman" },
+{ answer: "người", clue: "people, (classifier for human), the" },
+{ answer: "người mẫu", clue: "model, models" },
+{ answer: "ngắn", clue: "short" },
+{ answer: "ngồi", clue: "sit, sits, sitting" },
+{ answer: "ngủ", clue: "sleep, slept, sleeps" },
+{ answer: "ngựa", clue: "horse" },
+{ answer: "nha sĩ", clue: "dentist, dentists" },
+{ answer: "nhanh", clue: "fast, (can be adjective or adverb)" },
+{ answer: "nhanh lên", clue: "hurry up" },
+{ answer: "nhiêu", clue: "much" },
+{ answer: "nhiều", clue: "lots, many, various" },
+{ answer: "nhà báo", clue: "journalist" },
+{ answer: "nhà ga", clue: "train station" },
+{ answer: "nhà hàng", clue: "restaurant" },
+{ answer: "nhà khoa học", clue: "scientist, scientists" },
+{ answer: "nhà lãnh đạo", clue: "leader, leaders" },
+{ answer: "nhà sư", clue: "monk" },
+{ answer: "nhà thiết kế", clue: "designer" },
+{ answer: "nhà toán học", clue: "mathematician" },
+{ answer: "nhà vệ sinh", clue: "bathroom" },
+{ answer: "nhìn", clue: "look" },
+{ answer: "như", clue: "like, as" },
+{ answer: "nhưng", clue: "but, however" },
+{ answer: "nhạc sĩ", clue: "songwriter, songwriters" },
+{ answer: "nhạt", clue: "light" },
+{ answer: "nhảy", clue: "jump, dance, jumps" },
+{ answer: "nhất", clue: "first, most, the most" },
+{ answer: "nhận ra", clue: "realize" },
+{ answer: "nhật", clue: "Japan" },
+{ answer: "Nhật", clue: "Japan" },
+{ answer: "nhỏ", clue: "small, little" },
+{ answer: "những", clue: "these, my, the" },
+{ answer: "nào", clue: "let's, any, what kind of" },
+{ answer: "này", clue: "this, these, hey" },
+{ answer: "nâu", clue: "brown" },
+{ answer: "nên", clue: "ought, then, so" },
+{ answer: "nó", clue: "he, it's, it" },
+{ answer: "nói", clue: "spoken, speaks, to say" },
+{ answer: "nóng", clue: "hot" },
+{ answer: "nông dân", clue: "farmer" },
+{ answer: "năm", clue: "years, 5, year" },
+{ answer: "nước", clue: "water, country, countries" },
+{ answer: "nước ép", clue: "juice" },
+{ answer: "nấm", clue: "mushroom" },
+{ answer: "nấu", clue: "to cook, cook, cooking" },
+{ answer: "nấu ăn", clue: "cook, cooks, cooking" },
+{ answer: "nặng", clue: "heavy" },
+{ answer: "nếu", clue: "if" },
+{ answer: "nổi", clue: "famous" },
+{ answer: "nổi tiếng", clue: "famous, popular" },
+{ answer: "nửa", clue: "half" },
+{ answer: "ong", clue: "bee" },
+{ answer: "phi", clue: "Phi (proper name)" },
+{ answer: "phà", clue: "ferry" },
+{ answer: "Pháp", clue: "French, France" },
+{ answer: "phát hiện", clue: "discover" },
+{ answer: "phát minh", clue: "invent, invention, invents" },
+{ answer: "phân biệt", clue: "distinguish" },
+{ answer: "phía sau", clue: "behind" },
+{ answer: "phía trước", clue: "in front of, up ahead" },
+{ answer: "phòng", clue: "room" },
+{ answer: "phút", clue: "minute, minutes" },
+{ answer: "phường", clue: "ward" },
+{ answer: "phải không", clue: "is there ... ?, do ... ?, were ... ?" },
+{ answer: "phở", clue: "pho, phở" },
+{ answer: "phụ nữ", clue: "woman, women, female" },
+{ answer: "phức tạp", clue: "complicated" },
+{ answer: "pin", clue: "battery" },
+{ answer: "quan trọng", clue: "is important, important, was important" },
+{ answer: "quan tâm", clue: "care, considered, cares" },
+{ answer: "quyển", clue: "the, (classifier)" },
+{ answer: "quá", clue: "too, so, very" },
+{ answer: "quả", clue: "(classifier), fruit" },
+{ answer: "quần", clue: "pants, trousers" },
+{ answer: "quốc gia", clue: "country, national (adj), nation" },
+{ answer: "quốc tịch", clue: "nationality, citizenship" },
+{ answer: "rau", clue: "vegetable, vegetables" },
+{ answer: "rùa", clue: "turtle, tortoise" },
+{ answer: "rượu", clue: "alcohol, wine" },
+{ answer: "rất", clue: "extremely, very much, so" },
+{ answer: "rắn", clue: "snake" },
+{ answer: "rẻ", clue: "cheap" },
+{ answer: "rồng", clue: "dragon" },
+{ answer: "sai", clue: "wrong" },
+{ answer: "sao", clue: "what, what do, why" },
+{ answer: "sau", clue: "behind, next, then" },
+{ answer: "sau khi", clue: "after" },
+{ answer: "sinh viên", clue: "student, the students, students" },
+{ answer: "siêng năng", clue: "hard-working, diligent" },
+{ answer: "so sánh", clue: "compare" },
+{ answer: "sách", clue: "book" },
+{ answer: "sáng", clue: "morning, bright, light" },
+{ answer: "sáu", clue: "six, sixth" },
+{ answer: "sân bay", clue: "airport, airports" },
+{ answer: "súp", clue: "soup" },
+{ answer: "sản xuất", clue: "produce, producing, produces" },
+{ answer: "sấm sét", clue: "thunder" },
+{ answer: "sẽ", clue: "are going to, are going to be, will be" },
+{ answer: "số", clue: "number" },
+{ answer: "sống", clue: "alive, live, living" },
+{ answer: "sở thú", clue: "zoo" },
+{ answer: "sợi dây", clue: "string" },
+{ answer: "sữa", clue: "milk" },
+{ answer: "sự", clue: "(classifier)" },
+{ answer: "sự bắt đầu", clue: "beginning" },
+{ answer: "sự kiên nhẫn", clue: "patience" },
+{ answer: "sự lịch sự", clue: "politeness" },
+{ answer: "sự nghiêm túc", clue: "seriousness" },
+{ answer: "sự nghiệp", clue: "career" },
+{ answer: "sự phức tạp", clue: "complexity" },
+{ answer: "sự thay đổi", clue: "change" },
+{ answer: "sự thành công", clue: "success" },
+{ answer: "sự thân thiện", clue: "friendliness" },
+{ answer: "sự thật", clue: "truth" },
+{ answer: "sự đơn giản", clue: "simplicity" },
+{ answer: "sự đồng ý", clue: "agreement" },
+{ answer: "sự ủng hộ", clue: "support" },
+{ answer: "tai nạn", clue: "accident" },
+{ answer: "tham lam", clue: "greedy" },
+{ answer: "thay đổi", clue: "change, changes" },
+{ answer: "thiên niên kỷ", clue: "millennium, millenniums" },
+{ answer: "thoả mãn", clue: "satisfied, satisfy" },
+{ answer: "thu", clue: "autumn, fall" },
+{ answer: "thung lũng", clue: "valley" },
+{ answer: "thuyền trưởng", clue: "captain" },
+{ answer: "thuốc lá", clue: "tobacco" },
+{ answer: "thuỵ sĩ", clue: "Switzerland" },
+{ answer: "thành công", clue: "successful, succeed, success" },
+{ answer: "tháng", clue: "months, month, months'" },
+{ answer: "tháng một", clue: "january" },
+{ answer: "tháng tư", clue: "april" },
+{ answer: "thân thiện", clue: "friendly" },
+{ answer: "thì", clue: "is, am, then" },
+{ answer: "thích", clue: "like, likes" },
+{ answer: "thông minh", clue: "smart, intelligent" },
+{ answer: "thư", clue: "letter" },
+{ answer: "thư ký", clue: "secretary" },
+{ answer: "thảo luận", clue: "discuss, discusses, discussing" },
+{ answer: "thất bại", clue: "fail, failure" },
+{ answer: "thấy", clue: "see, find (limited context), sees" },
+{ answer: "thập niên", clue: "decade" },
+{ answer: "thật", clue: "real, so, really" },
+{ answer: "thật không", clue: "really" },
+{ answer: "thắng", clue: "win, defeat, wins" },
+{ answer: "thắt lưng", clue: "belt" },
+{ answer: "thế hệ", clue: "generation" },
+{ answer: "thế kỷ", clue: "century" },
+{ answer: "thế nào", clue: "how, how were, how was" },
+{ answer: "thịt", clue: "meat" },
+{ answer: "thỏ", clue: "rabbit, rabbits, bunny" },
+{ answer: "thời gian", clue: "time" },
+{ answer: "thủ đô", clue: "capital" },
+{ answer: "thứ", clue: "things, th, thing" },
+{ answer: "thứ tư", clue: "wednesday, fourth" },
+{ answer: "thức ăn", clue: "food" },
+{ answer: "thử", clue: "try, tries, try (sth) on" },
+{ answer: "thử thách", clue: "challenge, challenges" },
+{ answer: "thực đơn", clue: "menu" },
+{ answer: "tin", clue: "believe, trust" },
+{ answer: "tivi", clue: "television, televisions, tv" },
+{ answer: "tiếng", clue: "hour, hours, classifier for languages" },
+{ answer: "tiện lợi", clue: "convenient" },
+{ answer: "trai", clue: "boy" },
+{ answer: "triệu", clue: "million, millions" },
+{ answer: "trong", clue: "inside, for, at" },
+{ answer: "trong khi", clue: "while" },
+{ answer: "Trung Quốc", clue: "China" },
+{ answer: "trung thực", clue: "honest" },
+{ answer: "truyền thống", clue: "traditional, tradition" },
+{ answer: "trà", clue: "tea" },
+{ answer: "trái", clue: "(classifier for fruits), the, left" },
+{ answer: "trái cây", clue: "fruit" },
+{ answer: "trâu", clue: "buffalo" },
+{ answer: "trăm", clue: "hundred" },
+{ answer: "trưa", clue: "noon" },
+{ answer: "trước", clue: "ago, in front of, before" },
+{ answer: "trước khi", clue: "before" },
+{ answer: "trưởng thành", clue: "mature, adult" },
+{ answer: "trạm", clue: "station, stations" },
+{ answer: "trả lời", clue: "answer, respond, answers" },
+{ answer: "trắng", clue: "white" },
+{ answer: "trở lại", clue: "return, returns" },
+{ answer: "trở thành", clue: "become, get, becoming" },
+{ answer: "trở về", clue: "return, get back" },
+{ answer: "trứng", clue: "egg" },
+{ answer: "trừng phạt", clue: "punish" },
+{ answer: "tuy", clue: "although, however, despite" },
+{ answer: "tuần", clue: "week, weeks" },
+{ answer: "tuổi", clue: "age" },
+{ answer: "tàu hoả", clue: "train" },
+{ answer: "tách", clue: "cup" },
+{ answer: "tám", clue: "eight" },
+{ answer: "táo", clue: "apple" },
+{ answer: "tây", clue: "west, western" },
+{ answer: "Tây Ban Nha", clue: "Spain, Spanish" },
+{ answer: "tên", clue: "name, first name, title" },
+{ answer: "tìm", clue: "looking for, find, look for" },
+{ answer: "tìm hiểu", clue: "learn about, get to know, learn" },
+{ answer: "tìm ra", clue: "find, finds, find out" },
+{ answer: "tích cực", clue: "positive" },
+{ answer: "tím", clue: "purple, violet" },
+{ answer: "tính cách", clue: "characteristic, character, personality" },
+{ answer: "tôi", clue: "I" },
+{ answer: "tôn trọng", clue: "respect, respects" },
+{ answer: "túi", clue: "bag" },
+{ answer: "tư", clue: "private, four (for 24 or higher), four" },
+{ answer: "tương lai", clue: "future" },
+{ answer: "tại", clue: "at, in" },
+{ answer: "tạm biệt", clue: "goodbye, bye" },
+{ answer: "tạp chí", clue: "magazine" },
+{ answer: "tất", clue: "socks" },
+{ answer: "tập", clue: "practice" },
+{ answer: "tập trung", clue: "concentrate, focus" },
+{ answer: "tắm", clue: "takes a shower, bath, bathing" },
+{ answer: "tắt", clue: "off, turn off, close" },
+{ answer: "tặng", clue: "gifts, gift, gift (verb)" },
+{ answer: "tệ", clue: "bad" },
+{ answer: "tối", clue: "dark, evening, night" },
+{ answer: "tối nay", clue: "tonight" },
+{ answer: "tốt", clue: "well, fine, great" },
+{ answer: "tồn tại", clue: "exist, exists, existing" },
+{ answer: "tổng cộng", clue: "totally, in total" },
+{ answer: "tờ", clue: "sheet" },
+{ answer: "tờ giấy", clue: "paper" },
+{ answer: "từ", clue: "word, since, from" },
+{ answer: "từ điển", clue: "dictionary, dictionaries" },
+{ answer: "tử tế", clue: "kind, gracious" },
+{ answer: "tỷ", clue: "billion" },
+{ answer: "uống", clue: "drink, has, drinks" },
+{ answer: "viết", clue: "write, writes" },
+{ answer: "việc", clue: "work, business, job" },
+{ answer: "việt", clue: "Vietnamese" },
+{ answer: "việt nam", clue: "Vietnam, Vietnamese" },
+{ answer: "voi", clue: "elephant" },
+{ answer: "vui lòng cho", clue: "please" },
+{ answer: "và", clue: "and" },
+{ answer: "vàng", clue: "yellow, gold" },
+{ answer: "vào", clue: "to go into, for, into" },
+{ answer: "váy", clue: "skirt" },
+{ answer: "vâng", clue: "yes, (politely)" },
+{ answer: "vé", clue: "ticket" },
+{ answer: "vì", clue: "because, for, because of" },
+{ answer: "ví", clue: "wallet, purse" },
+{ answer: "văn hoá", clue: "culture" },
+{ answer: "vĩnh viễn", clue: "forever" },
+{ answer: "vẫn", clue: "yet, still" },
+{ answer: "vẻ đẹp", clue: "beauty" },
+{ answer: "vẽ", clue: "draw, draws, drawing" },
+{ answer: "về", clue: "for, toward, about" },
+{ answer: "vịt", clue: "duck" },
+{ answer: "với", clue: "with, plus, at" },
+{ answer: "vở", clue: "notebook" },
+{ answer: "vợ", clue: "wife, spouse" },
+{ answer: "vừa mới", clue: "just" },
+{ answer: "xa xỉ", clue: "luxurious" },
+{ answer: "xanh da trời", clue: "blue" },
+{ answer: "xanh lá cây", clue: "green" },
+{ answer: "xe buýt", clue: "bus" },
+{ answer: "xe taxi", clue: "taxi, taxis, (a) taxi" },
+{ answer: "xe ô tô", clue: "car" },
+{ answer: "xe đạp", clue: "bike, bicycle" },
+{ answer: "xem", clue: "watching, look at, watched" },
+{ answer: "xin", clue: "beg, ask for, please" },
+{ answer: "xin chào", clue: "hello, hi" },
+{ answer: "xin lỗi", clue: "apologize, sorry, excuse me" },
+{ answer: "xuân", clue: "spring" },
+{ answer: "xuất bản", clue: "publish, publishing" },
+{ answer: "xám", clue: "gray, grey" },
+{ answer: "xấu tính", clue: "mean" },
+{ answer: "xứng đáng", clue: "deserve" },
+{ answer: "y tá", clue: "nurse" },
+{ answer: "yêu", clue: "love, loves, loving" },
+{ answer: "á", clue: "Asian" },
+{ answer: "áo", clue: "shirt" },
+{ answer: "áo lạnh", clue: "sweater" },
+{ answer: "âu", clue: "Europe" },
+{ answer: "ích kỷ", clue: "selfish" },
+{ answer: "ít", clue: "little, few, some" },
+{ answer: "ô", clue: "umbrella" },
+{ answer: "ôm", clue: "hug" },
+{ answer: "ông", clue: "grandfather" },
+{ answer: "úc", clue: "Australia, australian" },
+{ answer: "ăn", clue: "eats, ate, eating" },
+{ answer: "đam mê", clue: "passion" },
+{ answer: "đang", clue: "is, am, (action is taking place)" },
+{ answer: "đen", clue: "black" },
+{ answer: "đi", clue: "travel, wear (refers to shoes), to go" },
+{ answer: "đi du lịch", clue: "travelling, traveling, travel" },
+{ answer: "đi nào", clue: "let's go" },
+{ answer: "điện thoại", clue: "phone, telephone" },
+{ answer: "đom đóm", clue: "firefly" },
+{ answer: "đu quay", clue: "ferris wheel" },
+{ answer: "đu đủ", clue: "papaya" },
+{ answer: "đàn ông", clue: "men, man" },
+{ answer: "đá", clue: "ice" },
+{ answer: "đánh giá cao", clue: "appreciate" },
+{ answer: "đáp án", clue: "answer" },
+{ answer: "đâu", clue: "where, where is ... ?, which" },
+{ answer: "đây", clue: "this, is here, these" },
+{ answer: "đèn", clue: "light, lamp" },
+{ answer: "đó", clue: "that, those, there" },
+{ answer: "đói", clue: "hungry" },
+{ answer: "đô", clue: "dollar" },
+{ answer: "đôi", clue: "two, pair of, pairs" },
+{ answer: "đông", clue: "winter, East, crowded" },
+{ answer: "đúng", clue: "right" },
+{ answer: "đĩa", clue: "dish, plate" },
+{ answer: "đơn giản", clue: "simple" },
+{ answer: "đưa", clue: "handing, handed, take" },
+{ answer: "đường", clue: "sugar" },
+{ answer: "đại dương", clue: "ocean" },
+{ answer: "đảo", clue: "island" },
+{ answer: "đầm", clue: "dress" },
+{ answer: "đầu bếp", clue: "cook" },
+{ answer: "đầu tiên", clue: "first" },
+{ answer: "đậm", clue: "dark, deep" },
+{ answer: "đắt", clue: "expensive" },
+{ answer: "đắt tiền", clue: "expensive" },
+{ answer: "đặc biệt", clue: "special, especially" },
+{ answer: "đặt chỗ", clue: "make a reservation, reservation" },
+{ answer: "đẹp", clue: "beautiful, pretty" },
+{ answer: "đến", clue: "is, arrives, go" },
+{ answer: "đến từ", clue: "are from, comes from, come from" },
+{ answer: "đều", clue: "both of, all, both" },
+{ answer: "để", clue: "for, let, lets" },
+{ answer: "địa hình", clue: "terrain" },
+{ answer: "đọc", clue: "read, reads" },
+{ answer: "đỏ", clue: "red" },
+{ answer: "đối mặt", clue: "face" },
+{ answer: "đồng", clue: "VND, dong, bronze" },
+{ answer: "đồng bằng", clue: "plain" },
+{ answer: "đồng hồ", clue: "watch, clock" },
+{ answer: "đồng ý", clue: "agree, agrees" },
+{ answer: "độc lập", clue: "independent, independence" },
+{ answer: "đội", clue: "wears, the team, team" },
+{ answer: "động vật", clue: "animals, animal" },
+{ answer: "đỡ", clue: "help" },
+{ answer: "đợi", clue: "wait" },
+{ answer: "đủ", clue: "enough" },
+{ answer: "đứa con", clue: "child, children, baby" },
+{ answer: "đứa trẻ", clue: "kid, child" },
+{ answer: "Đức", clue: "Germany" },
+{ answer: "đứng", clue: "stand, stands, stand/stands" },
+{ answer: "đừng", clue: "do not, don't, not" },
+{ answer: "ư", clue: "(untranslated)" },
+{ answer: "ấn độ", clue: "India" },
+{ answer: "ổn", clue: "fine" },
+{ answer: "ớt", clue: "chili, peppers, chilli" },
+{ answer: "ở", clue: "stayed, stayed in, has stayed in" },
+{ answer: "ở đâu", clue: "where, where does ... ?, where is ... ?" },
+{ answer: "ủng", clue: "boots" },
+{ answer: "ủng hộ", clue: "supports, support" },
+  ];
+
+  // Ask the user for how many questions they want and start a quiz
+  function askForNumQuestions() {
+    const max = QUESTIONS.length;
+    const input = prompt(`How many questions would you like? (1-${max})`);
+    if (input === null) {
+      // User cancelled: do nothing, stay on main page
+      return;
+    }
+    const num = parseInt(input, 10);
+    if (isNaN(num) || num <= 0) {
+      alert("Please enter a positive number.");
+      askForNumQuestions();
+      return;
+    }
+    const clamped = Math.min(num, max);
+    showQuiz(clamped);
+  }
+
+  // Pick a random subset of questions (no repeats)
+  function pickRandomQuestions(count) {
+    const indices = Array.from(QUESTIONS.keys());
+    // Shuffle (Fisher-Yates)
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const selected = indices.slice(0, count).map(i => QUESTIONS[i]);
+    return selected;
+  }
+
+  // Escape HTML for text insertion
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  /**
+   * Compute the minimal edit distance and a highlighted version of the
+   * correct answer, marking mistakes (subs/deletions) in red.
+   *
+   * Returns: { highlightedCorrectHtml, distance }
+   */
+  function diffAnswer(correctRaw, userRaw) {
+    const correct = correctRaw.toLowerCase();
+    const user = (userRaw || "").toLowerCase();
+
+    const m = correct.length;
+    const n = user.length;
+
+    // Levenshtein DP matrix
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = correct[i - 1] === user[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,      // deletion
+          dp[i][j - 1] + 1,      // insertion
+          dp[i - 1][j - 1] + cost // substitution / match
+        );
+      }
+    }
+
+    // Backtrack to figure out which chars in the correct answer are mistaken
+    let i = m;
+    let j = n;
+    const ops = []; // { type: 'equal'|'sub'|'del'|'ins', char: originalCorrectChar }
+
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && correct[i - 1] === user[j - 1] &&
+          dp[i][j] === dp[i - 1][j - 1]) {
+        ops.push({ type: 'equal', char: correctRaw[i - 1] });
+        i--; j--;
+      } else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) {
+        // substitution
+        ops.push({ type: 'sub', char: correctRaw[i - 1] });
+        i--; j--;
+      } else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) {
+        // deletion (missing char in user)
+        ops.push({ type: 'del', char: correctRaw[i - 1] });
+        i--;
+      } else {
+        // insertion (extra char in user)
+        // For highlighting the correct answer, there's no char to show,
+        // but it still counts as a mistake in the distance.
+        ops.push({ type: 'ins', char: "" });
+        j--;
+      }
+    }
+
+    ops.reverse();
+
+    // Build HTML for the correct answer with mistaken chars in red
+    let html = "";
+    for (const op of ops) {
+      const ch = op.char;
+      if (!ch) {
+        // insertion: extra char in user, nothing to display from the correct word
+        continue;
+      }
+      if (op.type === 'equal') {
+        html += escapeHtml(ch);
+      } else if (op.type === 'sub' || op.type === 'del') {
+        html += `<span class="mistake">${escapeHtml(ch)}</span>`;
+      } else {
+        // 'ins' here would have ch == "", already skipped above
+      }
+    }
+
+    const distance = dp[m][n];
+    return { highlightedCorrectHtml: html, distance };
+  }
+
+  // Show the overlay quiz for `numQuestions`
+  function showQuiz(numQuestions) {
+    const selected = pickRandomQuestions(numQuestions);
+
+    // Build rows
+    const rowsHtml = selected.map((q, idx) => `
+      <tr data-index="${idx}">
+        <td class="question">${escapeHtml(q.clue)}</td>
+        <td class="user-answer">
+          <input type="text" data-index="${idx}" autocomplete="off" data-vnkeys/>
+        </td>
+        <td class="correct-answer"></td>
+        <td class="mistake-count"></td>
+      </tr>
+    `).join("");
+
+    // Build overlay + modal
+    const overlay = document.createElement("div");
+    overlay.id = "quiz-overlay";
+
+    overlay.innerHTML = `
+      <div class="quiz-modal">
+        <h2>Spelling Quiz</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Your Answer</th>
+              <th>Real Answer</th>
+              <th>Mistakes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        <div class="quiz-footer">
+          <div class="total-mistakes">Total mistakes: <span id="total-mistakes">0</span></div>
+          <button id="quiz-submit">Submit</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const submitButton = overlay.querySelector("#quiz-submit");
+    const totalMistakesSpan = overlay.querySelector("#total-mistakes");
+    const inputs = Array.from(overlay.querySelectorAll("input[data-index]"));
+    const tbody = overlay.querySelector("tbody");
+
+    let graded = false;
+
+    submitButton.addEventListener("click", () => {
+      if (!graded) {
+        // Grade answers
+        let total = 0;
+        const rows = Array.from(tbody.querySelectorAll("tr[data-index]"));
+
+        rows.forEach(row => {
+          const idx = parseInt(row.getAttribute("data-index"), 10);
+          const correct = selected[idx].answer;
+          const input = row.querySelector('input[data-index]');
+          const userAns = input.value;
+
+          const { highlightedCorrectHtml, distance } = diffAnswer(correct, userAns);
+          total += distance;
+
+          const correctCell = row.querySelector(".correct-answer");
+          const mistakesCell = row.querySelector(".mistake-count");
+
+          correctCell.innerHTML = highlightedCorrectHtml || escapeHtml(correct);
+          mistakesCell.textContent = distance.toString();
+
+          input.disabled = true;
+        });
+
+        totalMistakesSpan.textContent = total.toString();
+        graded = true;
+        submitButton.textContent = "OK";
+      } else {
+        // Dismiss and go back to main game
+        overlay.remove();
+        askForNumQuestions();
+      }
+    });
+
+    // Focus first input for convenience
+    if (inputs.length > 0) {
+      inputs[0].focus();
+    }
+  }
+
+  // Start by asking for number of questions
+  window.addEventListener("load", () => {
+    askForNumQuestions();
+  });
+</script>
+
+<script src="VNKeys.js"></script>
+
+</body>
+</html>

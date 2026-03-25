@@ -1,6 +1,7 @@
 // Global game state
 
 const PARTY_SAVE_KEY = "gameforvietnamese.savedParty.v1";
+const SPELLING_QUIZ_MODULE_VERSION = "20260324";
 let spellingQuizApiPromise = null;
 
 function cloneParty(party) {
@@ -66,7 +67,9 @@ async function leaveDungeon() {
 
 async function getSpellingQuizApi() {
   if (!spellingQuizApiPromise) {
-    spellingQuizApiPromise = import(new URL("./spellingQuiz.js", window.location.href).href);
+    const url = new URL("./spellingQuiz.js", window.location.href);
+    url.searchParams.set("v", SPELLING_QUIZ_MODULE_VERSION);
+    spellingQuizApiPromise = import(url.href);
   }
   return spellingQuizApiPromise;
 }

@@ -145,8 +145,11 @@
       padding: 10px;
       display: flex;            /* horizontal layout */
       gap: 10px;
-      flex-wrap: wrap;          /* wrap on small screens */
-      justify-content: center;  /* center the row */
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
     }
 
     .member {
@@ -160,9 +163,8 @@
       border-radius: 12px;
       background: #202534;
       border: 1px solid #2a3142;
-      /* make each card size nicely in the row */
-      flex: 1 1 clamp(160px, 45%, 220px);
-      max-width: 240px;
+      flex: 0 0 calc((100% - 30px) / 4);
+      min-width: 0;
     }
 
     .avatar {
@@ -175,19 +177,13 @@
     .member-name { font-weight: 700; }
     .member-meta { color: var(--muted); font-size: 0.9rem; }
 
-    .label { font-size: 0.78rem; color: var(--muted); min-width: 34px; }
-
     .controls-placeholder { padding: 16px; color: var(--muted); text-align: center; border: 1px dashed #3a4152; border-radius: var(--radius); background: #1a1f2b; }
 
     /* Party row tile refinements */
     .member-main { width: 100%; }
     .member-top { justify-content: center; }
     .member .row { display: grid; grid-template-columns: 1fr; gap: 6px; }
-    .member .label { justify-self: center; font-size: 0.75rem; }
-
-    @media (min-width: 900px) {
-      .party .member { flex: 1 1 calc(25% - 10px); } /* 4 per row on wider screens */
-    }
+    .member .row { width: 100%; }
 
     /* Desktop spacing */
     @media (min-width: 768px) {

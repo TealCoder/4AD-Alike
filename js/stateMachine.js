@@ -210,7 +210,7 @@ function renderTownScreen() {
           <span>Dice Rolls</span>
           <select id="town-dice-mode">
             <option value="random"${Town.diceMode === "random" ? " selected" : ""}>Random</option>
-            <option value="spelling"${Town.diceMode === "spelling" ? " selected" : ""}>Spelling Game</option>
+            <option value="spelling"${Town.diceMode === "spelling" ? " selected" : ""}>Vacab Quiz-Roll</option>
           </select>
         </label>
       </div>
@@ -219,7 +219,7 @@ function renderTownScreen() {
       <div class="town-note">${escapeHtml(partyHelp)}</div>
 
       <div id="town-spelling-panel" class="town-spelling" style="${spellingStyle}">
-        <div class="town-subtitle">Spelling Game Settings</div>
+        <div class="town-subtitle">Vacab Quiz-Roll Settings</div>
         <label class="town-check">
           <input id="town-vnkeys" type="checkbox"${Town.spelling.enableVnKeys ? " checked" : ""} />
           <span>VNKeys mode</span>
