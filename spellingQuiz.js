@@ -274,37 +274,40 @@ export async function showSpellingQuiz(numQuestions, actions, enableVnKeys = fal
       const style = document.createElement("style");
       style.id = "spq-styles";
       style.textContent = `
-#quiz-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999}
-.quiz-modal{background:#fff;padding:16px 20px;border-radius:10px;max-width:980px;width:95%;box-shadow:0 6px 16px rgba(0,0,0,.3);max-height:85vh;overflow:auto;font-family:Arial,sans-serif}
-.quiz-modal h2{margin:0 0 8px}
-.quiz-modal table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:14px}
-.quiz-modal th,.quiz-modal td{border:1px solid #ccc;padding:6px;vertical-align:top}
-.quiz-modal th{background:#f0f0f0}
-.quiz-modal .user-answer input{width:100%;box-sizing:border-box}
-.quiz-modal .correct-answer{font-family:monospace;white-space:pre-wrap}
-.quiz-modal .mistake{color:red;font-weight:bold}
+#quiz-overlay{position:fixed;inset:0;background:rgba(7,10,16,.82);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9999}
+.quiz-modal{background:linear-gradient(180deg,#171a21,#1e222b);color:#e7ebf3;padding:16px 20px;border-radius:16px;border:1px solid #2a2f3a;max-width:980px;width:95%;box-shadow:0 18px 48px rgba(0,0,0,.45);max-height:85vh;overflow:auto;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial,sans-serif}
+.quiz-modal h2{margin:0 0 8px;color:#e7ebf3}
+.quiz-modal table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:14px;background:#151922;border-radius:10px;overflow:hidden}
+.quiz-modal th,.quiz-modal td{border:1px solid #2b3241;padding:6px;vertical-align:top}
+.quiz-modal th{background:#202532;color:#e7ebf3}
+.quiz-modal td{background:#171c25}
+.quiz-modal .user-answer input{width:100%;box-sizing:border-box;background:#0f131b;color:#e7ebf3;border:1px solid #3a4152;border-radius:8px;padding:8px 10px}
+.quiz-modal .user-answer input:disabled{opacity:.8}
+.quiz-modal .correct-answer{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;white-space:pre-wrap}
+.quiz-modal .mistake{color:#ff7b7b;font-weight:bold}
 .quiz-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.total-mistakes{font-weight:bold}
-.quiz-modal button{padding:6px 12px;cursor:pointer}
+.total-mistakes{font-weight:bold;color:#e7ebf3}
+.quiz-modal button{padding:8px 14px;cursor:pointer;border-radius:10px;border:1px solid #2b3241;background:#202532;color:#e7ebf3}
+.quiz-modal button:hover{background:#263043}
 
 /* VNKeys help panel */
-.vnkeys-help{margin:10px 0 12px;padding:10px;border:1px solid #ddd;border-radius:10px;background:#fafafa;font-size:12px;line-height:1.35}
+.vnkeys-help{margin:10px 0 12px;padding:10px;border:1px solid #2b3241;border-radius:10px;background:#141923;font-size:12px;line-height:1.35}
 .vnkeys-help h3{margin:0 0 6px;font-size:13px}
 .vnkeys-help .grid{display:grid;grid-template-columns:1fr 2fr;gap:.45rem .9rem;align-items:baseline}
 .vnkeys-help .row{display:contents}
-.vnkeys-help .muted{color:#666}
-.vnkeys-help .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;background:#fff;border:1px solid #d1d5db;border-radius:.35rem;padding:.05rem .35rem;white-space:nowrap}
+.vnkeys-help .muted{color:#a7b0c0}
+.vnkeys-help .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;background:#0f131b;border:1px solid #3a4152;border-radius:.35rem;padding:.05rem .35rem;white-space:nowrap}
 .vnkeys-help .spacer > div{margin-top:.2rem}
 .vnkeys-help .footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
-.vnkeys-help .links a{color:#2563eb;text-decoration:none}
+.vnkeys-help .links a{color:#5aa2ff;text-decoration:none}
 .vnkeys-help .links a:hover{text-decoration:underline}
-.vnkeys-help .sep{color:#999;margin:0 6px}
-.vnkeys-error{margin:6px 0 0;color:#b00;font-size:12px}
+.vnkeys-help .sep{color:#667085;margin:0 6px}
+.vnkeys-error{margin:6px 0 0;color:#ff7b7b;font-size:12px}
 `;
       document.head.appendChild(style);
     }
 
-    const title = enableVnKeys ? "Spelling Quiz — VNKeys in effect" : "Spelling Quiz";
+    const title = enableVnKeys ? "Vacab Quiz-Roll — VNKeys in effect" : "Vacab Quiz-Roll";
 
     const headerCells = ([
       includeActionCol ? `<th>Action</th>` : ``,

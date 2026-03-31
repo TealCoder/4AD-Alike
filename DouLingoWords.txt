@@ -2,22 +2,21 @@ ai	whom, who, anyone
 anh	English, the United Kingdom, England
 anh trai	older brother, elder brother
 anh ấy	he, him
-ba	third, father, dad
-bao	bag
-bay	flies, blown, fly
+ba	three, appearantly sometimes: dad
+cái bao	bag
+bay	fly
 biết	knows, know, knowing
 buồn	are sad, sorry, was sad
-buổi	the, session
 buổi sáng	morning
 buổi tối	evening, night
 bà	grandmother
-bàn	the table, table, the desk
+cái bàn	the table, table, the desk
 bác sĩ	doctor
 bán	sell, sells
-bánh	cake, cookie, pie
+cái bánh	cake, cookie, pie
 bánh mì	bread
-báo	newspaper, journal, paper
-bát	bowl
+tờ báo	newspaper, journal, paper
+cái bát	bowl
 bây giờ	now, moment, it
 bé gái	girl
 bình thường	normal, usual
@@ -44,16 +43,16 @@ bồ đào nha	Portugal
 bộ	(classifier for clothes), (classifier for sets), board
 bởi vì	because
 bữa	meals, meal
-ca	mug, shift
+cái ca	mug, shift
 ca sĩ	singer, singers
-cam	orange
+quả cam	orange
 canh	soup
 chai	bottle, bottles
-chanh	lemon
+quả chanh	lemon
 chay	vegetarian, vegan
 chia buồn	condole, condolence
 chia sẻ	share
-chim	bird
+con chim	bird
 chim sẻ	sparrow
 chiếc	the, ones
 chiếc váy	skirt
@@ -63,9 +62,9 @@ cho	for, let, lets
 cho phép	allow, allows, let
 cho tôi hỏi	excuse me
 chuyên nghiệp	professional
-chuối	banana, bananas
+quả chuối	banana, bananas
 chuồn chuồn	dragonfly
-chuột	mouse
+con chuột	mouse
 chào	greet, hello, greets
 chào mừng	welcome
 chào tạm biệt	bye, goodbye
@@ -148,23 +147,23 @@ em trai	younger brother
 ga	station, gas
 ghi âm	record, records
 ghét	hate, hates, hated
-ghế	chair
+cái ghế	chair
 gia đình	family
 giao tiếp	communicate, communicating
 giàu	rich
-giày	shoes, shoe, the shoes
+đôi giày	shoes, shoe, the shoes
 giáo viên	teacher
 giây	second, seconds
 giúp	help, helps
-giường	bed
+cái giường	bed
 giấu	hide
 giờ	hour, hours, now
 giữ	keep
 gà	chicken
 gái	girl
 gì	what, what are, what is
-găng tay	glove
-gương	mirror, example
+đôi găng tay	glove
+cái gương	mirror, example
 gấu	bear
 gặp	encountered, dealing, meeting
 gặp lại sau	see you later
@@ -215,7 +214,7 @@ không	do not, no, weren't
 không có gì	you're welcome
 không phải	not, is not, are not
 không phải là	not, wasn't, am not
-khăn quàng	scarf, scarves
+cái khăn quàng	scarf, scarves
 khẳng định	affirm
 khỉ	monkey
 kia	that, those, other
@@ -223,7 +222,7 @@ kiên nhẫn	patient
 kiến trúc sư	architect
 kế toán	accountant, accounting
 kỹ sư	engineer
-la bàn	compass
+cái la bàn	compass
 linh hoạt	flexible
 luyện	practices, practice
 luyện tập	practice
@@ -244,7 +243,7 @@ lần	time, times, turns
 lắng nghe	listen, listens, listening
 lặp lại	repeat, repeats
 lẻ	(used at hundred level)
-lịch	calendar
+cuốn lịch	calendar
 lịch sự	polite
 lớn	large, big, great
 lợi thế	advantage, advantages
@@ -254,13 +253,13 @@ mua	buy
 mua sắm	shop, shopping
 muối	salt, salty
 muốn	want
-muỗng	spoon
+cái muỗng	spoon
 mà còn	not only... but also, but also
 màu	color
-máy bay	airplane, plane
-máy tính	computer
-mây	cloud
-mèo	cat
+chiếc máy bay	airplane, plane
+cái máy tính	computer
+đám mây	cloud
+con mèo	cat
 mì	noodles
 mì ý	pasta
 mì ăn liền	instant noodles
@@ -268,7 +267,7 @@ mình	I'm, I, herself
 món	dish, kind, (indicates item of food)
 mùa	season, crop
 múa	dance, dances, dance/dances (verb)
-mũ	hat
+cái mũ	hat
 mươi	thirty
 mười	ten
 mẫu giáo	kindergarten
@@ -355,7 +354,7 @@ nổi tiếng	famous, popular
 nửa	half
 ong	bee
 phi	Phi (proper name)
-phà	ferry
+cái phà	ferry
 Pháp	French, France
 phát hiện	discover
 phát minh	invent, invention, invents
@@ -369,7 +368,7 @@ phải không	is there ... ?, do ... ?, were ... ?
 phở	pho, phở
 phụ nữ	woman, women, female
 phức tạp	complicated
-pin	battery
+cục pin	battery
 quan trọng	is important, important, was important
 quan tâm	care, considered, cares
 quyển	the, (classifier)
@@ -392,7 +391,7 @@ sau khi	after
 sinh viên	student, the students, students
 siêng năng	hard-working, diligent
 so sánh	compare
-sách	book
+quyển sách	book
 sáng	morning, bright, light
 sáu	six, sixth
 sân bay	airport, airports
@@ -450,7 +449,7 @@ thắt lưng	belt
 thế hệ	generation
 thế kỷ	century
 thế nào	how, how were, how was
-thịt	meat
+miếng thịt	meat
 thỏ	rabbit, rabbits, bunny
 thời gian	time
 thủ đô	capital
@@ -461,7 +460,7 @@ thử	try, tries, try (sth) on
 thử thách	challenge, challenges
 thực đơn	menu
 tin	believe, trust
-tivi	television, televisions, tv
+cái tivi	television, televisions, tv
 tiếng	hour, hours, classifier for languages
 tiện lợi	convenient
 trai	boy
@@ -486,15 +485,15 @@ trắng	white
 trở lại	return, returns
 trở thành	become, get, becoming
 trở về	return, get back
-trứng	egg
+quả trứng	egg
 trừng phạt	punish
 tuy	although, however, despite
 tuần	week, weeks
 tuổi	age
 tàu hoả	train
-tách	cup
+cái tách	cup
 tám	eight
-táo	apple
+quả táo	apple
 tây	west, western
 Tây Ban Nha	Spain, Spanish
 tên	name, first name, title
@@ -506,7 +505,7 @@ tím	purple, violet
 tính cách	characteristic, character, personality
 tôi	I
 tôn trọng	respect, respects
-túi	bag
+cái túi	bag
 tư	private, four (for 24 or higher), four
 tương lai	future
 tại	at, in
@@ -542,9 +541,9 @@ vàng	yellow, gold
 vào	to go into, for, into
 váy	skirt
 vâng	yes, (politely)
-vé	ticket
+cái vé	ticket
 vì	because, for, because of
-ví	wallet, purse
+cái ví	wallet, purse
 văn hoá	culture
 vĩnh viễn	forever
 vẫn	yet, still
@@ -553,16 +552,16 @@ vẽ	draw, draws, drawing
 về	for, toward, about
 vịt	duck
 với	with, plus, at
-vở	notebook
+quyển vở	notebook
 vợ	wife, spouse
 vừa mới	just
 xa xỉ	luxurious
 xanh da trời	blue
 xanh lá cây	green
-xe buýt	bus
-xe taxi	taxi, taxis, (a) taxi
-xe ô tô	car
-xe đạp	bike, bicycle
+chiếc xe buýt	bus
+chiếc xe taxi	taxi, taxis, (a) taxi
+chiếc xe ô tô	car
+chiếc xe đạp	bike, bicycle
 xem	watching, look at, watched
 xin	beg, ask for, please
 xin chào	hello, hi
@@ -580,7 +579,7 @@ yêu	love, loves, loving
 âu	Europe
 ích kỷ	selfish
 ít	little, few, some
-ô	umbrella
+cái ô	umbrella
 ôm	hug
 ông	grandfather
 úc	Australia, australian
@@ -591,30 +590,30 @@ yêu	love, loves, loving
 đi	travel, wear (refers to shoes), to go
 đi du lịch	travelling, traveling, travel
 đi nào	let's go
-điện thoại	phone, telephone
+cái điện thoại	phone, telephone
 đom đóm	firefly
 đu quay	ferris wheel
 đu đủ	papaya
 đàn ông	men, man
-đá	ice
+cục đá	ice
 đánh giá cao	appreciate
 đáp án	answer
 đâu	where, where is ... ?, which
 đây	this, is here, these
-đèn	light, lamp
+cái đèn	light, lamp
 đó	that, those, there
 đói	hungry
 đô	dollar
 đôi	two, pair of, pairs
 đông	winter, East, crowded
 đúng	right
-đĩa	dish, plate
+cái đĩa	dish, plate
 đơn giản	simple
 đưa	handing, handed, take
 đường	sugar
 đại dương	ocean
-đảo	island
-đầm	dress
+hòn đảo	island
+cái đầm	dress
 đầu bếp	cook
 đầu tiên	first
 đậm	dark, deep
@@ -646,10 +645,9 @@ yêu	love, loves, loving
 Đức	Germany
 đứng	stand, stands, stand/stands
 đừng	do not, don't, not
-ư	(untranslated)
 ấn độ	India
 ổn	fine
-ớt	chili, peppers, chilli
+quả ớt	chili, peppers, chilli
 ở	stayed, stayed in, has stayed in
 ở đâu	where, where does ... ?, where is ... ?
 ủng	boots

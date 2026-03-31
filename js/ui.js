@@ -158,16 +158,18 @@ function setMP(id, mp, mpMax) {
 
 // ===== Story Text =====
 function setStory(text) { 
-  storyEl = document.getElementById('story')
+  const storyEl = document.getElementById('story-content');
+  const scrollEl = document.getElementById('story-scroll');
   storyEl.innerHTML += text +"<br>";
   // Always scroll to bottom to show the latest lines
-  storyEl.scrollTop = storyEl.scrollHeight;
+  scrollEl.scrollTop = scrollEl.scrollHeight;
 }
 
 function setStoryHtml(html) {
-  const storyEl = document.getElementById('story');
+  const storyEl = document.getElementById('story-content');
+  const scrollEl = document.getElementById('story-scroll');
   storyEl.innerHTML = html;
-  storyEl.scrollTop = 0;
+  scrollEl.scrollTop = 0;
 }
 
 // ===== Init =====

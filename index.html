@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Four Against Homework</title>
-  <link rel="stylesheet" href="styles.css?v=20260324b" />
+  <link rel="stylesheet" href="styles.css?v=20260324g" />
 </head>
 <body>
 <div class="page">
@@ -37,12 +37,14 @@
 
       <!-- Story / Situation Text -->
       <section class="card story" id="story">
-        The party stands before the old haunted school house. The air hums with dread...and learning potential!<br>
-      </section>
-
-      <!-- Primary Actions -->
-      <section class="card actions" id="actions">
-        <!-- Buttons injected by JS for easy reconfiguration -->
+        <div class="story-scroll" id="story-scroll">
+          <div class="story-content" id="story-content">
+            The party stands before the old haunted school house. The air hums with dread...and learning potential!<br>
+          </div>
+          <div class="actions" id="actions">
+            <!-- Buttons injected by JS for easy reconfiguration -->
+          </div>
+        </div>
       </section>
 
     </main>
@@ -76,18 +78,18 @@
   </div>
 </div>
 
-  <script src="js/ui.js?v=20260324b"></script>
+  <script src="js/ui.js?v=20260324g"></script>
 
   <!-- Data (swap these to swap party/rooms) -->
-  <script src="js/data/party.js?v=20260324b"></script>
-  <script src="js/data/rooms.js?v=20260324b"></script>
-  <script src="js/state.js?v=20260324b"></script>
+  <script src="js/data/party.js?v=20260324g"></script>
+  <script src="js/data/rooms.js?v=20260324g"></script>
+  <script src="js/state.js?v=20260324g"></script>
 
   <!-- Game logic -->
-  <script src="js/stateMachine.js?v=20260324b"></script>
-  <script src="js/main.js?v=20260324b"></script>
+  <script src="js/stateMachine.js?v=20260324g"></script>
+  <script src="js/main.js?v=20260324g"></script>
 
   <!-- Tests -->
-  <script src="js/tests/smokeTests.js?v=20260324b"></script>
+  <script src="js/tests/smokeTests.js?v=20260324g"></script>
 </body>
 </html>
